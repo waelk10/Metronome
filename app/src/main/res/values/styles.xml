@@ -1,0 +1,29 @@
+<resources>
+
+	<!-- Base application theme. -->
+	<style name="AppTheme" parent="android:Theme.Material">
+		<item name="android:colorPrimary">@color/colorPrimary</item>
+		<item name="android:colorPrimaryDark">@color/colorPrimaryDark</item>
+		<item name="android:colorAccent">@color/colorAccent</item>
+		<item name="android:textColorPrimary">@color/colorPrimaryText</item>
+		<item name="android:textColorSecondary">@color/colorSecondaryText</item>
+		<item name="android:itemBackground">@color/colorPrimaryDark</item>
+	</style>
+
+	<!-- Save Dialog theme -->
+	<style name="DialogSaveTheme" parent="android:Theme.Material.Dialog">
+		<item name="android:colorPrimary">@color/colorPrimary</item>
+		<item name="android:colorPrimaryDark">@color/colorPrimaryDark</item>
+		<item name="android:colorAccent">@color/colorAccent</item>
+		<item name="android:textColorPrimary">@color/colorPrimaryText</item>
+		<item name="android:textColorSecondary">@color/colorSecondaryText</item>
+	</style>
+
+	<!-- Divider line View style -->
+	<style name="Divider">
+		<item name="android:layout_width">match_parent</item>
+		<item name="android:layout_height">1dp</item>
+		<item name="android:background">@color/colorAccent</item>
+	</style>
+
+</resources>

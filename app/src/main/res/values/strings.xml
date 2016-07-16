@@ -1,0 +1,26 @@
+<resources>
+	<string name="app_name">Metronome</string>
+	<string name="start">Start/Stop</string>
+	<string name="bpm">BPM:</string>
+	<string name="plus_one">+1</string>
+	<string name="minus_one">-1</string>
+	<string name="plus_ten">+10</string>
+	<string name="minus_ten">-10</string>
+	<string name="beats_number">Beats:</string>
+	<string name="keep_on">Keep The Screen On</string>
+	<string name="save">Save</string>
+	<string name="restore">Restore</string>
+	<string name="about">About</string>
+	<string name="email">waelkarram@gmail.com</string>
+	<string name="copyright">Copyright 2016, Wael Karram.</string>
+	<string name="save_preset">Save Preset</string>
+	<string name="ok">OK</string>
+	<string name="delete">Delete</string>
+	<string name="deleted">Deleted</string>
+	<string name="no_saved_presets_toast">You haven\'t saved any presets!</string>
+	<string name="nothing_delete">Nothing to delete!</string>
+	<string name="values_set">Set the values!</string>
+	<string name="save_name">Save:</string>
+	<string name="tap">TAP</string>
+	<string name="stop_tap">Finish Taps</string>
+</resources>
