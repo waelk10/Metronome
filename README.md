@@ -1,5 +1,5 @@
 # A Metronome app.  
-Note that the projecta licensed under the GPL (V3 or newer).  
+Note that the project is licensed under the GPL (V3 or newer).  
 Here is a copy of the license:  
 
 
