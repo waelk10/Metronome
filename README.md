@@ -1,6 +1,6 @@
-# A Metronome app.
-Note that the projecta licensed under the GPL (V3 or newer)
-Here is a copy of the license
+# A Metronome app.  
+Note that the projecta licensed under the GPL (V3 or newer).  
+Here is a copy of the license:  
 
 
 GNU GENERAL PUBLIC LICENSE
