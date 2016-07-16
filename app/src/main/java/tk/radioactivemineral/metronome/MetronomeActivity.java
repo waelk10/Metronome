@@ -36,6 +36,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -469,12 +471,21 @@ public class MetronomeActivity extends Activity {
 		//build the dialog
 		AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity);
 		//build the text
-		Spanny message = new Spanny(getString(R.string.app_name) + '\n', new UnderlineSpan()).append('\n' + getString(R.string.email)).append('\n' + getString(R.string.copyright)).append(version);
+		Spanny message = new Spanny(getString(R.string.app_name) + '\n', new UnderlineSpan()).append('\n' + getString(R.string.email)).append('\n' + getString(R.string.copyright)).append('\n'+version).append("\n\n\n\n\n" + getString(R.string.license));
 		builder.setMessage(message).setTitle(getString(R.string.about));
 		//add the icon
 		builder.setIcon(getResources().getDrawable(R.mipmap.ic_launcher, getTheme()));
 		//create the object
 		AlertDialog dialog = builder.create();
+		//build the layout
+		final LinearLayout layout = new LinearLayout(this);
+		ScrollView scrollView = new ScrollView(this);
+		layout.setOrientation(LinearLayout.VERTICAL);
+		TextView textView = new TextView(this);
+		textView.setText(message);
+		scrollView.addView(textView);
+		//layout.addView(scrollView);
+		dialog.setView(layout);
 		//display the dialog to the user
 		dialog.show();
 		//set the background color

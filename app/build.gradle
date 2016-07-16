@@ -35,8 +35,8 @@ android {
 		applicationId "tk.radioactivemineral.metronome"
 		minSdkVersion 21
 		targetSdkVersion 23
-		versionName 'NKT275'
-		versionCode 3
+		versionName 'Thorium'
+		versionCode 4
 	}
 	buildTypes {
 		release {
