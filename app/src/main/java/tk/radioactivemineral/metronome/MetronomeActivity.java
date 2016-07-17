@@ -564,7 +564,7 @@ public class MetronomeActivity extends Activity {
 	private View.OnClickListener stopTapClickListener = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
-			if (taps == -1 || taps == 0) {
+			if (taps == -1 || taps == 0 || totalTime == 0L) {
 				Toast.makeText(MetronomeActivity.this, "Not enough taps, at least two needed!", Toast.LENGTH_SHORT).show();
 				return;
 			}
