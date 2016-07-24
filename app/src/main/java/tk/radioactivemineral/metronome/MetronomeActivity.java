@@ -63,6 +63,8 @@ import java.util.Locale;
  * http://satyan.github.io/sugar/query.html - SugarORM query
  */
 
+//TODO: EXTREMELY IMPORTANT: WHENEVER YOU PUSH A NEW VERSION TO GITHUB, MAKE SURE TO MANUALLY UPDATE THE CHANGES OF "build.gradle" TO "build.gradle-sample", WHILE EXCLUDING THE SIGNING CONFIG!!!!!!
+
 public class MetronomeActivity extends Activity {
 	private final static int BPM_INDEX = 0;
 	private final static int BEATS_INDEX = 1;
