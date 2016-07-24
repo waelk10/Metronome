@@ -19,16 +19,6 @@
 apply plugin: 'com.android.application'
 
 android {
-	signingConfigs {
-		config {
-		}
-		WaelsConfig {
-			keyAlias 'WKC'
-			keyPassword 'KW10JHZ2954AG'
-			storeFile file('/home/wael/Android-keysotre/WKC.jks')
-			storePassword 'LZ20GTVAS7321'
-		}
-	}
 	compileSdkVersion 23
 	buildToolsVersion "23.0.2"
 	defaultConfig {
