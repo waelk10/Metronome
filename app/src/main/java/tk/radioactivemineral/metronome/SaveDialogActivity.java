@@ -52,6 +52,8 @@ public class SaveDialogActivity extends Activity {
 		//init
 		final int beats = getIntent().getExtras().getInt(MetronomeActivity.DIALOG_SAVE_BEATS);
 		final int bpm = getIntent().getExtras().getInt(MetronomeActivity.DIALOG_SAVE_BPM);
+		final double beatSound = getIntent().getExtras().getDouble(MetronomeActivity.DIALOG_SAVE_BEAT_SOUND);
+		final double sound = getIntent().getExtras().getDouble(MetronomeActivity.DIALOG_SAVE_SOUND);
 		editText = (EditText) findViewById(R.id.editTextDialog);
 		buttonOK = (Button) findViewById(R.id.buttonOK);
 
@@ -61,7 +63,7 @@ public class SaveDialogActivity extends Activity {
 			public void onClick(View v) {
 				//check for a valid name
 				if (!editText.getText().toString().equals("")) {
-					Preset preset = new Preset(editText.getText().toString(), beats, bpm, MetronomeActivity.AUTO_SAVE_FLAG_FALSE);
+					Preset preset = new Preset(editText.getText().toString(), beats, bpm, MetronomeActivity.AUTO_SAVE_FLAG_FALSE, beatSound, sound);
 					Long id = preset.save();
 					//set the flag of a successful save
 					SharedPreferences preferences = getSharedPreferences(MetronomeActivity.PREFS_NAME, 0);

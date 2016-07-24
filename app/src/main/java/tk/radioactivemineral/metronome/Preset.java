@@ -24,20 +24,24 @@ public class Preset extends SugarRecord {
 	String title;
 	int beats;
 	int bpm;
+	double beatSound;
+	double sound;
 	boolean autosave_flag;
 
 	//used by SugarORM
-	public Preset (){}
+	public Preset() {
+	}
 
-	public Preset(String title, int beats, int bpm, boolean autosaveFlag){
+	public Preset(String title, int beats, int bpm, boolean autosaveFlag, double beatSound, double sound) {
 		this.title = title;
 		this.beats = beats;
 		this.bpm = bpm;
 		this.autosave_flag = autosaveFlag;
+		this.beatSound = beatSound;
+		this.sound = sound;
 	}
 
 	//getters
-
 	public String getTitle() {
 		return title;
 	}
@@ -52,5 +56,13 @@ public class Preset extends SugarRecord {
 
 	public boolean isAutosaveFlag() {
 		return autosave_flag;
+	}
+
+	public double getSound() {
+		return sound;
+	}
+
+	public double getBeatSound() {
+		return beatSound;
 	}
 }

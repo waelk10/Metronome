@@ -19,10 +19,8 @@
 package tk.radioactivemineral.metronome;
 
 public class Metronome {
-
 	private double bpm;
 	private int beat;
-	private int noteValue;
 	private int silence;
 
 	private double beatSound;
@@ -31,14 +29,19 @@ public class Metronome {
 
 	private boolean play = true;
 
-	private AudioGenerator audioGenerator = new AudioGenerator(8000);
+	private AudioGenerator audioGenerator;
 
 	public Metronome() {
+		audioGenerator = new AudioGenerator(8000);
 		audioGenerator.createPlayer();
+	}
+	public Metronome(AudioGenerator audioGenerator) {
+		this.audioGenerator = audioGenerator;
+		audioGenerator.createPlayer(audioGenerator.getAudioTrack());
 	}
 
 	public void calcSilence() {
-		silence = (int) (((60/bpm)*8000)-tick);
+		silence = (int) (((60 / bpm) * 8000) - tick);
 	}
 
 	public void play() {
@@ -49,11 +52,11 @@ public class Metronome {
 				audioGenerator.getSineWave(this.tick, 8000, sound);
 		double silence = 0;
 		double[] sound = new double[8000];
-		int t = 0,s = 0,b = 0;
+		int t = 0, s = 0, b = 0;
 		do {
-			for(int i=0;i<sound.length&&play;i++) {
-				if(t<this.tick) {
-					if(b == 0)
+			for (int i = 0; i < sound.length && play; i++) {
+				if (t < this.tick) {
+					if (b == 0)
 						sound[i] = tock[t];
 					else
 						sound[i] = tick[t];
@@ -61,17 +64,17 @@ public class Metronome {
 				} else {
 					sound[i] = silence;
 					s++;
-					if(s >= this.silence) {
+					if (s >= this.silence) {
 						t = 0;
 						s = 0;
 						b++;
-						if(b > (this.beat-1))
+						if (b > (this.beat - 1))
 							b = 0;
 					}
 				}
 			}
 			audioGenerator.writeSound(sound);
-		} while(play);
+		} while (play);
 	}
 
 	public void stop() {
@@ -95,14 +98,6 @@ public class Metronome {
 		this.beat = beat;
 	}
 
-	public int getNoteValue() {
-		return noteValue;
-	}
-
-	public void setNoteValue(int noteValue) {
-		this.noteValue = noteValue;
-	}
-
 	public double getBeatSound() {
 		return beatSound;
 	}
@@ -119,10 +114,16 @@ public class Metronome {
 		this.sound = sound;
 	}
 
+	public AudioGenerator getAudioGenerator() {
+		return audioGenerator;
+	}
+
 	//copy maker
-	public Metronome copyMetronome(){
+	public Metronome copyMetronome() {
+		if(!play)
+			this.stop();
 		Metronome metronomeCopy;
-		metronomeCopy = new Metronome();
+		metronomeCopy = new Metronome(this.getAudioGenerator());
 		metronomeCopy.setSound(this.getSound());
 		metronomeCopy.setBeatSound(this.getBeatSound());
 		metronomeCopy.setBpm(this.getBpm());
@@ -130,7 +131,7 @@ public class Metronome {
 		return metronomeCopy;
 	}
 
-	public Boolean playRes(){
+	public Boolean playRes() {
 		this.play();
 		return Boolean.TRUE;
 	}

@@ -30,10 +30,10 @@ public class AudioGenerator {
 		this.sampleRate = sampleRate;
 	}
 
-	public double[] getSineWave(int samples,int sampleRate,double frequencyOfTone){
+	public double[] getSineWave(int samples, int sampleRate, double frequencyOfTone) {
 		double[] sample = new double[samples];
 		for (int i = 0; i < samples; i++) {
-			sample[i] = Math.sin(2 * Math.PI * i / (sampleRate/frequencyOfTone));
+			sample[i] = Math.sin(2 * Math.PI * i / (sampleRate / frequencyOfTone));
 		}
 		return sample;
 	}
@@ -47,18 +47,27 @@ public class AudioGenerator {
 			// in 16 bit wav PCM, first byte is the low order byte
 			generatedSound[index++] = (byte) (maxSample & 0x00ff);
 			generatedSound[index++] = (byte) ((maxSample & 0xff00) >>> 8);
-
 		}
 		return generatedSound;
 	}
 
-	public void createPlayer(){
+	public void createPlayer() {
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
 				sampleRate, AudioFormat.CHANNEL_OUT_MONO,
 				AudioFormat.ENCODING_PCM_16BIT, sampleRate,
 				AudioTrack.MODE_STREAM);
-
 		audioTrack.play();
+	}
+
+	//used to avoid of an uninitialized state which lead to a crash!
+	public void createPlayer(AudioTrack audioTrack) {
+		this.audioTrack = audioTrack;
+		if (this.audioTrack.getState() != AudioTrack.STATE_INITIALIZED)
+			this.audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+					sampleRate, AudioFormat.CHANNEL_OUT_MONO,
+					AudioFormat.ENCODING_PCM_16BIT, sampleRate,
+					AudioTrack.MODE_STREAM);
+		this.audioTrack.play();
 	}
 
 	public void writeSound(double[] samples) {
@@ -69,5 +78,9 @@ public class AudioGenerator {
 	public void destroyAudioTrack() {
 		audioTrack.stop();
 		audioTrack.release();
+	}
+
+	public AudioTrack getAudioTrack() {
+		return audioTrack;
 	}
 }

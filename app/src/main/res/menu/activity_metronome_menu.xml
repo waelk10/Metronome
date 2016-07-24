@@ -17,20 +17,8 @@
   ~      along with Metronome.  If not, see <http://www.gnu.org/licenses/>.
   -->
 
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
-	  xmlns:app="http://schemas.android.com/apk/res-auto">
-	<!-- Deprecated
-	<item android:id="@+id/action_save"
-		  app:showAsAction="never"
-		  android:title="@string/save"/>
-	<item android:id="@+id/action_restore"
-		  app:showAsAction="never"
-		  android:title="@string/restore"/>
-	<item android:id="@+id/action_delete"
-		  app:showAsAction="never"
-		  android:title="@string/delete"/>
-		  -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
 	<item android:id="@+id/action_about"
-		  app:showAsAction="never"
+		  android:showAsAction="never"
 		  android:title="@string/about"/>
 </menu>

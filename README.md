@@ -1,4 +1,5 @@
-# A Metronome app.  
+# A Metronome app.
+Note that you may need to manually modify the "build.gradle-sample" file before compiling the project!
 Note that the project is licensed under the GPL (V3 or newer).  
 Here is a copy of the license:  
 
