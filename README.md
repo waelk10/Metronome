@@ -1,4 +1,7 @@
 # A Metronome app.
+
+[<img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" height="60">](https://f-droid.org/app/tk.radioactivemineral.metronome)
+
 Note that you may need to manually modify the "build.gradle-sample" file before compiling the project!
 Note that the project is licensed under the GPL (V3 or newer).  
 Here is a copy of the license:  
