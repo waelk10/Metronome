@@ -1,0 +1,66 @@
+<!--
+  ~ Copyright (c) 2016.
+  ~ This file is part of Metronome.
+  ~
+  ~      Metronome is free software: you can redistribute it and/or modify
+  ~      it under the terms of the GNU General Public License as published by
+  ~      the Free Software Foundation, either version 3 of the License, or
+  ~      (at your option) any later version.
+  ~
+  ~      Metronome is distributed in the hope that it will be useful,
+  ~      but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~      GNU General Public License for more details.
+  ~
+  ~      You should have received a copy of the GNU General Public License
+  ~      along with Metronome.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+	<string name="app_name">Métronome</string>
+	<string name="start">Démarrer/Arrêter</string>
+	<string name="bpm">BPM:</string>
+	<string name="plus_one">+1</string>
+	<string name="minus_one">-1</string>
+	<string name="plus_ten">+10</string>
+	<string name="minus_ten">-10</string>
+	<string name="beats_number">Beats:</string>
+	<string name="keep_on">Garder l\écran allumé</string>
+	<string name="save">Sauvegarder</string>
+	<string name="restore">Rétablir</string>
+	<string name="about">À propos</string>
+	<string name="email">waelkarram@gmail.com</string>
+	<string name="copyright">Copyright 2016, Wael Karram.</string>
+	<string name="license">Métronome is free software: you can redistribute it and/or modify
+		~ it under the terms of the GNU General Public License as published by
+		~ the Free Software Foundation, either version 3 of the License, or
+		~ (at your option) any later version.
+		~
+		~ Metronome is distributed in the hope that it will be useful,
+		~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+		~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+		~ GNU General Public License for more details.
+		~
+		~ You should have received a copy of the GNU General Public License
+		~ along with Metronome. If not, see &lt;http://www.gnu.org/licenses/>.
+	</string>
+	<string name="save_preset">Sauvegarder Configuration</string>
+	<string name="ok">OK</string>
+	<string name="delete">Supprimer</string>
+	<string name="deleted">Supprimé</string>
+	<string name="no_saved_presets_toast">Vous n\'avez sauvegardé aucune configuration !</string>
+	<string name="nothing_delete">Rien à supprimer !</string>
+	<string name="values_set">Entrez des valeurs saines!</string>
+	<string name="save_name">Sauvegarder :</string>
+	<string name="tap">TAP</string>
+	<string name="stop_tap">Terminer les Taps</string>
+	<string name="round_up">Up</string>
+	<string name="round_down">Down</string>
+	<string name="round_up_toast">Arrondir au supérieur la valeur de BPM.</string>
+	<string name="round_down_toast">Arrondir à l\inférieur la veleur de BPM.</string>
+	<string name="tone">Son</string>
+	<string name="tick">Tick</string>
+	<string name="tock">Tock</string>
+	<string name="about_note">Note that the taps are in subdivisions of 4/4!</string>
+	<string name="reset">Reset to defaults</string>
+</resources>
