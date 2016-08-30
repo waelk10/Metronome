@@ -134,7 +134,6 @@ public class MetronomeActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
 		setContentView(R.layout.activity_metronome);
 
 		//find view elements
@@ -506,7 +505,7 @@ public class MetronomeActivity extends Activity {
 		//build the dialog
 		AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity);
 		//build the text
-		Spanny message = new Spanny(getString(R.string.app_name) + '\n', new UnderlineSpan()).append('\n' + getString(R.string.email)).append('\n' + getString(R.string.copyright)).append('\n' + version +'\n').append('\n' + getString(R.string.about_note)).append("\n\n\n\n\n" + getString(R.string.license));
+		Spanny message = new Spanny(getString(R.string.app_name) + '\n', new UnderlineSpan()).append('\n' + getString(R.string.email)).append('\n' + getString(R.string.copyright)).append('\n' + version + '\n').append('\n' + getString(R.string.about_note)).append("\n\n\n\n\n" + getString(R.string.license));
 		builder.setMessage(message).setTitle(getString(R.string.about));
 		//add the icon
 		builder.setIcon(getResources().getDrawable(R.mipmap.ic_launcher, getTheme()));
@@ -753,21 +752,22 @@ public class MetronomeActivity extends Activity {
 			//note that there is no need for sorting the array before using it since the values are already set in a ascending order!
 			indexBeatSound = Arrays.binarySearch(pitches, presetList.get(i).getBeatSound());
 			indexSound = Arrays.binarySearch(pitches, presetList.get(i).getSound());
-			titles[i] = presetList.get(i).getTitle() + " - " + presetList.get(i).getBpm() + "/" + presetList.get(i).getBeats()+ " - " + notes[indexBeatSound] + "|" + notes[indexSound];
+			titles[i] = presetList.get(i).getTitle() + " - " + presetList.get(i).getBpm() + "/" + presetList.get(i).getBeats() + " - " + notes[indexBeatSound] + "|" + notes[indexSound];
 			i++;
 		}
 		return titles;
 	}
 
 	//helper function used to stop and reset the metronome and related variables
-	private void metronomeStop(){
+	private void metronomeStop() {
 		//stop the metronome
 		currentMetronome.stop();
 		//delegate the rest to the other helper function
 		metronomeReset();
 	}
+
 	//helper function used to reset the metronome and related variables
-	private void metronomeReset(){
+	private void metronomeReset() {
 		//stop the metronome
 		currentMetronome.setBeatSound(0.0);
 		currentMetronome.setBeat(0);
