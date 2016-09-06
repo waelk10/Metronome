@@ -44,6 +44,9 @@ captures/
 # Keystore files
 *.jks
 
+#local build.gradle
+/app/build.gradle
+
 ###########
 # Windows #
 ###########
