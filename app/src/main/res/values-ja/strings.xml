@@ -1,0 +1,67 @@
+﻿<!--
+  ~ Copyright (c) 2016.
+  ~ This file is part of Metronome.
+  ~
+  ~      Metronome is free software: you can redistribute it and/or modify
+  ~      it under the terms of the GNU General Public License as published by
+  ~      the Free Software Foundation, either version 3 of the License, or
+  ~      (at your option) any later version.
+  ~
+  ~      Metronome is distributed in the hope that it will be useful,
+  ~      but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~      GNU General Public License for more details.
+  ~
+  ~      You should have received a copy of the GNU General Public License
+  ~      along with Metronome.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<resources>
+	<string name="app_name">Metronome</string>
+	<string name="start">スタート/ストップ</string>
+	<string name="bpm">BPM:</string>
+	<string name="plus_one">+1</string>
+	<string name="minus_one">-1</string>
+	<string name="plus_ten">+10</string>
+	<string name="minus_ten">-10</string>
+	<string name="beats_number">ビート:</string>
+	<string name="keep_on">画面をオンのままにする</string>
+	<string name="save">保存</string>
+	<string name="restore">復元</string>
+	<string name="about">アプリについて</string>
+	<string name="email">waelkarram@gmail.com</string>
+	<string name="copyright">Copyright 2016, Wael Karram.</string>
+	<string name="license">Metronome はフリーソフトウェアです。あなたはこれを、フリーソフ
+		~ トウェア財団によって発行されたGNU 一般公衆利用許諾書(バージョン3か、
+		~ それ以降のバージョンのうちどれか)が定める条件の下で再頒布または改変
+		~ することができます。 
+		~
+		~ Metronome は有用であることを願って頒布されますが、*全くの無保証
+		~ *です。商業可能性の保証や特定目的への適合性は、言外に示されたものも
+		~ 含め、全く存在しません。詳しくはGNU 一般公衆利用許諾書をご覧くださ
+		~ い。
+		~
+		~ あなたはこのプログラムと共に、GNU 一般公衆利用許諾書のコピーを一部
+		~ 受け取っているはずです。もし受け取っていなければ、&lt;http://www.gnu.org/licenses/&gt;
+		~ をご覧ください。
+	</string>
+	<string name="save_preset">プリセットを保存</string>
+	<string name="ok">OK</string>
+	<string name="delete">削除</string>
+	<string name="deleted">削除しました</string>
+	<string name="no_saved_presets_toast">プリセットを保存していません!</string>
+	<string name="nothing_delete">削除対象がありません!</string>
+	<string name="values_set">正しい値をセットしてください!</string>
+	<string name="save_name">保存:</string>
+	<string name="tap">タップ</string>
+	<string name="stop_tap">タップ終了</string>
+	<string name="round_up">アップ</string>
+	<string name="round_down">ダウン</string>
+	<string name="round_up_toast">BPM 値を切り上げて丸めます。</string>
+	<string name="round_down_toast">BPM 値を切り捨てて丸めます。</string>
+	<string name="tone">トーン</string>
+	<string name="tick">チック</string>
+	<string name="tock">タック</string>
+	<string name="about_note">タップは 4/4 に分かれることに注意してください!</string>
+	<string name="reset">デフォルトにリセット</string>
+</resources>
