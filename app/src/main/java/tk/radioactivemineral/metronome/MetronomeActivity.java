@@ -46,21 +46,18 @@ import com.binaryfork.spanny.Spanny;
 import com.nanotasks.BackgroundWork;
 import com.nanotasks.Completion;
 import com.nanotasks.Tasks;
-import com.orm.query.Select;
 
-import java.util.Arrays;
-import java.util.List;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Useful links
- * http://satyan.github.io/sugar/index.html - SugarORM
  * https://github.com/fabiendevos/nanotasks - Nano Tasks
  * http://developer.android.com/training/scheduling/wakelock.html - Keeping the screen on
  * http://masterex.github.io/archive/2012/05/28/android-audio-synthesis.html - Metronome base code
- * http://developer.android.com/reference/android/app/Activity.html#onPause%28%29 - docs, onPause()
- * http://satyan.github.io/sugar/getting-started.html - SugarORM general
- * http://satyan.github.io/sugar/query.html - SugarORM query
  */
 
 //TODO: EXTREMELY IMPORTANT: WHENEVER YOU PUSH A NEW VERSION TO GITHUB, MAKE SURE TO MANUALLY UPDATE THE CHANGES OF "build.gradle" TO "build.gradle-sample", WHILE EXCLUDING THE SIGNING CONFIG!!!!!!
@@ -70,12 +67,15 @@ public class MetronomeActivity extends Activity {
 	private final static int BEATS_INDEX = 1;
 	private final static int BEAT_SOUND_INDEX = 2;
 	private final static int SOUND_INDEX = 3;
-	private final static int AUTO_SAVE_VALUES_ARRAY_LENGTH = 4;
+	private final static int UUID_INDEX = 4;
+	private final static int AUTO_SAVE_VALUES_ARRAY_LENGTH = 5;
 	private final static int INIT_INTERVAL = 400;
 	private final static int NORMAL_INTERVAL = 100;
+	private final static int BUFFER_SIZE = 1024;
 	private final static double SOUND = 880;
 	private final static double BEAT_SOUND = 440;
 	private final static boolean AUTO_SAVE_FLAG_TRUE = true;
+	private final static String TAG = "MetronomeActivity";
 	public final static boolean AUTO_SAVE_FLAG_FALSE = false;
 	public final static int REQUEST_ID = 1;
 	public final static String PREFS_NAME = "DbPrefsFile";
@@ -85,8 +85,6 @@ public class MetronomeActivity extends Activity {
 	public final static String DIALOG_SAVE_BEATS = "INTENT_BEATS_DATA";
 	public final static String DIALOG_SAVE_BEAT_SOUND = "INTENT_BEAT_SOUND_DATA";
 	public final static String DIALOG_SAVE_SOUND = "INTENT_SOUND_DATA";
-	private final static String TAG = "MetronomeActivity";
-	private final static String AUTO_SAVE = "AUTO_SAVE";
 
 	TextView textViewBPM;
 	TextView textViewBeats;
@@ -116,7 +114,9 @@ public class MetronomeActivity extends Activity {
 
 	Boolean flag;
 
-	Long id;
+	String patternString;
+	String uuid;
+
 	Long currentTime;
 	Long oldTime;
 	Long timeDeltaSum;
@@ -166,7 +166,7 @@ public class MetronomeActivity extends Activity {
 		flag = false;
 
 		//initialize the id
-		id = -1L;
+		uuid = null;
 		//initialize time counters
 		currentTime = -1L;
 		timeDeltaSum = 0L;
@@ -181,18 +181,36 @@ public class MetronomeActivity extends Activity {
 		beatSound = BEAT_SOUND;
 		sound = SOUND;
 
+		//set up the pattern
+		patternString = "\b" + getResources().getText(R.string.autosave_name) + ".*TRUE.*\\n\b";
+
+		//for debugging
+		Log.i(TAG, "DATA FILE PATH!\n"+this.getFilesDir().getAbsolutePath());
+
 		//restore previous autosave if applicable
 		//check if saved or not
 		SharedPreferences preferences = getSharedPreferences(PREFS_NAME, 0);
 		boolean save = preferences.getBoolean(DB_SAVE_EXISTS, false);
 		if (save) {
-			List<Preset> presetList = Select.from(Preset.class).list();
-			double[] valuesArray = getAutoSaveValues(presetList);
-			if (valuesArray != null) {
-				beats = (int) valuesArray[BEATS_INDEX];
-				bpm = (int) valuesArray[BPM_INDEX];
-				beatSound = valuesArray[BEAT_SOUND_INDEX];
-				sound = valuesArray[SOUND_INDEX];
+			FileInputStream fileInputStream;
+			String fileData;
+			byte[] bytes;
+			try{
+				fileInputStream = openFileInput(SaveDialogActivity.DATA_STORAGE_FILE_NAME);
+				bytes = new byte[BUFFER_SIZE];
+				fileInputStream.read(bytes);
+				fileInputStream.close();
+				fileData = new String(bytes);
+				double[] valuesArray = getAutoSaveValues(fileData);
+				if (valuesArray != null) {
+					beats = (int) valuesArray[BEATS_INDEX];
+					bpm = (int) valuesArray[BPM_INDEX];
+					beatSound = valuesArray[BEAT_SOUND_INDEX];
+					sound = valuesArray[SOUND_INDEX];
+					uuid = valuesArray[UUID_INDEX] + "";
+				}
+			}catch (IOException e){
+				Log.w(TAG, "failed to auto-save!\n" + e.toString());
 			}
 		}
 
@@ -217,8 +235,8 @@ public class MetronomeActivity extends Activity {
 		deleteButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (id != -1L) {
-					delete(id);
+				if (uuid != null) {
+					delete(uuid);
 					Toast.makeText(contextActivity, getResources().getText(R.string.deleted), Toast.LENGTH_SHORT).show();
 				} else
 					Toast.makeText(contextActivity, getResources().getText(R.string.nothing_delete), Toast.LENGTH_SHORT).show();
@@ -320,29 +338,48 @@ public class MetronomeActivity extends Activity {
 		super.onActivityResult(requestCode, resultCode, data);
 		switch (requestCode) {
 			case REQUEST_ID:
-				if (resultCode == Activity.RESULT_OK)
-					id = data.getLongExtra(DIALOG_SAVE_ID, -1L);
+				if (resultCode != Activity.RESULT_OK)
+					Toast.makeText(contextActivity, getResources().getText(R.string.save_fail_toast), Toast.LENGTH_SHORT).show();
 		}
 	}
 
 	@Override
 	protected void onPause() {
 		super.onPause();
+		//delete previous instances
+		FileInputStream fileInputStream;
+		String fileData = null;
+		byte[] bytes;
+		try{
+			fileInputStream = openFileInput(SaveDialogActivity.DATA_STORAGE_FILE_NAME);
+			bytes = new byte[BUFFER_SIZE];
+			fileInputStream.read(bytes);
+			fileInputStream.close();
+			fileData = new String(bytes);
+			fileData = MiscUtils.removeAutoSave(fileData, MetronomeActivity.this);
+		}catch (IOException e){
+			Log.w(TAG, "failed to auto-save!\n" + e.toString());
+		}
 		//auto-save
-		//delete previous entry
-		List<Preset> presetList = Select.from(Preset.class).list();
-		Preset preset = getAutoSave(presetList);
-		if (preset != null)
-			preset.delete();
-		//save new entry
-		preset = new Preset(AUTO_SAVE, beats, bpm, AUTO_SAVE_FLAG_TRUE, beatSound, sound);
-		id = preset.save();
-		//set the flag of a successful save
-		SharedPreferences preferences = getSharedPreferences(PREFS_NAME, 0);
-		SharedPreferences.Editor editor = preferences.edit();
-		editor.putBoolean(DB_SAVE_EXISTS, true);
-		//commit
-		editor.apply();
+		if(fileData != null){
+			FileOutputStream fileOutputStream;
+			String data = MiscUtils.prepareForStorage(getResources().getText(R.string.autosave_name).toString(), beats, bpm, MetronomeActivity.AUTO_SAVE_FLAG_TRUE, beatSound, sound, UUID.randomUUID().toString());
+			try{
+				fileOutputStream = openFileOutput(SaveDialogActivity.DATA_STORAGE_FILE_NAME, Context.MODE_PRIVATE);
+				//concatenate the old and new data and write to file
+				data = fileData + data;
+				fileOutputStream.write(data.getBytes());
+				fileOutputStream.close();
+			}catch (IOException e){
+				Log.w(TAG, "failed to auto-save!\n" + e.toString());
+			}
+			//set the flag of a successful save
+			SharedPreferences preferences = getSharedPreferences(PREFS_NAME, 0);
+			SharedPreferences.Editor editor = preferences.edit();
+			editor.putBoolean(DB_SAVE_EXISTS, true);
+			//commit
+			editor.apply();
+		}
 	}
 
 	//overflow menu setup
@@ -366,14 +403,34 @@ public class MetronomeActivity extends Activity {
 	}
 
 	//delete from db
-	private void delete(Long ident) {
+	private void delete(String uuid) {
 		//stop the metronome
 		metronomeStop();
 		//delete
-		Preset preset = Preset.findById(Preset.class, ident);
-		preset.delete();
-		//reset the id
-		id = -1L;
+		FileInputStream fileInputStream;
+		String fileData = null;
+		byte[] bytes;
+		try{
+			fileInputStream = openFileInput(SaveDialogActivity.DATA_STORAGE_FILE_NAME);
+			bytes = new byte[BUFFER_SIZE];
+			fileInputStream.read(bytes);
+			fileInputStream.close();
+			fileData = new String(bytes);
+			fileData = MiscUtils.removeByUUID(fileData, uuid);
+		}catch (IOException e){
+			Log.w(TAG, "failed to delete!\n" + e.toString());
+		}
+		//save the changes
+		if(fileData != null){
+			FileOutputStream fileOutputStream;
+			try{
+				fileOutputStream = openFileOutput(SaveDialogActivity.DATA_STORAGE_FILE_NAME, Context.MODE_PRIVATE);
+				fileOutputStream.write(fileData.getBytes());
+				fileOutputStream.close();
+			}catch (IOException e){
+				Log.w(TAG, "failed to delete!\n" + e.toString());
+			}
+		}
 	}
 
 	//NOTICE: I know that the tick and tock options are REVERSED, but for some reason if they aren't reversed in the code they get reversed somewhere else!
@@ -420,58 +477,80 @@ public class MetronomeActivity extends Activity {
 		}).show();
 	}
 
+	//TODO: add a check for the existence of the storage file!
 	//restore dialog
 	private void restoreDialog() {
 		//stop the metronome
 		metronomeStop();
 		//list of all the presets
-		final List<Preset> presetList = Select.from(Preset.class).list();
-		getPresets(presetList);
-		if (presetList.size() != 0) {
-			AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity);
-			final String[] titles = getTitles(presetList);
-			builder.setSingleChoiceItems(titles, 0, null)
-					.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int whichButton) {
-							//dismiss the dialog
-							dialog.dismiss();
-							//get selected entry/position/row
-							if (((AlertDialog) dialog).getListView() != null) {
-								int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
-								//set the values, for the variables and the UI
-								beats = presetList.get(selectedPosition).getBeats();
-								bpm = presetList.get(selectedPosition).getBpm();
-								id = presetList.get(selectedPosition).getId();
-								beatSound = presetList.get(selectedPosition).getBeatSound();
-								sound = presetList.get(selectedPosition).getSound();
-								textViewBPM.setText(String.format(Locale.US, "%d", bpm));
-								textViewBeats.setText(String.format(Locale.US, "%d", beats));
-								AudioGenerator audioGenerator = metronome.getAudioGenerator();
-								metronome = null;
-								metronome = new Metronome(audioGenerator);
-								metronome.setBeatSound(beatSound);
-								metronome.setSound(sound);
-								metronome.setBpm(bpm);
-								metronome.setBeat(beats);
-								currentMetronome = metronome.copyMetronome();
-							}
+		FileInputStream fileInputStream;
+		final String fileData;
+		byte[] buffer;
+		StringBuffer stringBuffer = new StringBuffer("");
+		int index;
+		try{
+			fileInputStream = openFileInput(SaveDialogActivity.DATA_STORAGE_FILE_NAME);
+			buffer = new byte[BUFFER_SIZE];
+			while ((index = fileInputStream.read(buffer))!=-1)
+				stringBuffer.append(new String(buffer, 0, index));
+			fileInputStream.close();
+			fileData = stringBuffer.toString();
+			final String[][] parsedData = MiscUtils.parseSaveDataList(fileData);
+			final String[][] fullParsedData = MiscUtils.parseSaveDataArrays(fileData);
+			if (parsedData != null){
+				AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity);
+				final String[] titles = getTitles(parsedData);
+				builder.setSingleChoiceItems(titles, 0, null).setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int whichButton) {
+						//dismiss the dialog
+						dialog.dismiss();
+						//get selected entry/position/row
+						if (((AlertDialog) dialog).getListView() != null) {
+							int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+							//set the values, for the variables and the UI
+							beats = Integer.parseInt(fullParsedData[selectedPosition][MiscUtils.BEATS_INDEX]);
+							bpm = Integer.parseInt(fullParsedData[selectedPosition][MiscUtils.BPM_INDEX]);
+							uuid = fullParsedData[selectedPosition][MiscUtils.UUID_INDEX];
+							beatSound = Double.parseDouble(fullParsedData[selectedPosition][MiscUtils.BEAT_SOUND_INDEX]);
+							sound = Double.parseDouble(fullParsedData[selectedPosition][MiscUtils.SOUND_INDEX]);
+							textViewBPM.setText(String.format(Locale.US, "%d", bpm));
+							textViewBeats.setText(String.format(Locale.US, "%d", beats));
+							AudioGenerator audioGenerator = metronome.getAudioGenerator();
+							metronome = null;
+							metronome = new Metronome(audioGenerator);
+							metronome.setBeatSound(beatSound);
+							metronome.setSound(sound);
+							metronome.setBpm(bpm);
+							metronome.setBeat(beats);
+							currentMetronome = metronome.copyMetronome();
 						}
-					}).setNegativeButton(R.string.delete, new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					//dismiss the dialog
-					dialog.dismiss();
-					//get selected entry/position/row
-					if (((AlertDialog) dialog).getListView() != null) {
-						int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
-						//delete the selection
-						delete(presetList.get(selectedPosition).getId());
 					}
-				}
-			}).show();
-		} else
-			Toast.makeText(contextActivity, getResources().getText(R.string.no_saved_presets_toast), Toast.LENGTH_SHORT).show();
-
+				}).setNegativeButton(R.string.delete, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						//dismiss the dialog
+						dialog.dismiss();
+						//get selected entry/position/row
+						if (((AlertDialog) dialog).getListView() != null) {
+							int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+							//delete the selection
+							delete(parsedData[selectedPosition][2]);
+						}
+					}
+				}).show();
+			}else
+				Toast.makeText(contextActivity, getResources().getText(R.string.no_saved_presets_toast), Toast.LENGTH_SHORT).show();
+			double[] valuesArray = getAutoSaveValues(fileData);
+			if (valuesArray != null) {
+				beats = (int) valuesArray[BEATS_INDEX];
+				bpm = (int) valuesArray[BPM_INDEX];
+				beatSound = valuesArray[BEAT_SOUND_INDEX];
+				sound = valuesArray[SOUND_INDEX];
+				uuid = valuesArray[UUID_INDEX] + "";
+			}
+		}catch (IOException e){
+			Log.w(TAG, "failed to restore!\n" + e.toString());
+		}
 	}
 
 	//save dialog
@@ -484,6 +563,7 @@ public class MetronomeActivity extends Activity {
 		intent.putExtra(DIALOG_SAVE_BEATS, beats);
 		intent.putExtra(DIALOG_SAVE_BEAT_SOUND, beatSound);
 		intent.putExtra(DIALOG_SAVE_SOUND, sound);
+		intent.putExtra(DIALOG_SAVE_ID, UUID.randomUUID().toString());
 		startActivityForResult(intent, REQUEST_ID);
 	}
 
@@ -522,7 +602,11 @@ public class MetronomeActivity extends Activity {
 		//display the dialog to the user
 		dialog.show();
 		//set the background color
-		dialog.getWindow().setBackgroundDrawableResource(R.color.colorPrimaryDark);
+		try{
+			dialog.getWindow().setBackgroundDrawableResource(R.color.colorPrimaryDark);
+		}catch (NullPointerException e){
+			Log.e(TAG, "about page\n"+ e.toString());
+		}
 	}
 
 	//used for the tone menu button
@@ -566,7 +650,7 @@ public class MetronomeActivity extends Activity {
 
 			}
 			//reset the id
-			id = -1L;
+			uuid = null;
 		}
 	};
 
@@ -690,70 +774,31 @@ public class MetronomeActivity extends Activity {
 			//reset the metronome
 			currentMetronome = metronome.copyMetronome();
 			//reset the id
-			id = -1L;
+			uuid = null;
 		}
 	};
 
 	//used to find and return the values of the auto-save preset
-	private double[] getAutoSaveValues(List<Preset> presetList) {
-		Preset preset = getAutoSave(presetList);
-		if (preset == null)
+	private double[] getAutoSaveValues(String data){
+		if (data == null)
 			return null;
 		double[] values = new double[AUTO_SAVE_VALUES_ARRAY_LENGTH];
-		values[BEATS_INDEX] = preset.getBeats();
-		values[BPM_INDEX] = preset.getBpm();
-		values[BEAT_SOUND_INDEX] = preset.getBeatSound();
-		values[SOUND_INDEX] = preset.getBeatSound();
+		String[] parsedDataStrings = MiscUtils.parseSaveData(MiscUtils.getAutoSave(data, MetronomeActivity.this));
+		values[BEATS_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.BEATS_INDEX]);
+		values[BPM_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.BPM_INDEX]);
+		values[BEAT_SOUND_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.BEAT_SOUND_INDEX]);
+		values[SOUND_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.SOUND_INDEX]);
+		values[UUID_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.UUID_INDEX]);
 		return values;
 	}
 
-	//used to find and return the object "Preset" of the auto-save preset
-	private Preset getAutoSave(List<Preset> presetList) {
-		if (presetList == null || presetList.isEmpty())
-			return null;
-		int i = 0;
-		int length = presetList.size();
-		while (i < length) {
-			if (presetList.get(i).isAutosaveFlag()) {
-				return presetList.get(i);
-			} else
-				i++;
-		}
-		return null;
-	}
-
-	//used to find and return the presets (excluding auto-save)
-	private void getPresets(List<Preset> presetList) {
-		if (presetList == null || presetList.isEmpty())
-			return;
-		int i = 0;
-		int length = presetList.size();
-		while (i < length) {
-			if (presetList.get(i).isAutosaveFlag()) {
-				presetList.remove(i);
-				return;
-			} else
-				i++;
-		}
-	}
-
 	//used to generate a String array of titles from the presets
-	private String[] getTitles(List<Preset> presetList) {
-		if (presetList == null || presetList.isEmpty())
+	private String[] getTitles(String[][] data){
+		if(data == null)
 			return null;
-		int i = 0;
-		int length = presetList.size();
-		String[] titles = new String[presetList.size()];
-		double[] pitches = pitchGenerator.getFreqs();
-		String[] notes = pitchGenerator.getNotes();
-		int indexBeatSound;
-		int indexSound;
-		while (i < length) {
-			//note that there is no need for sorting the array before using it since the values are already set in a ascending order!
-			indexBeatSound = Arrays.binarySearch(pitches, presetList.get(i).getBeatSound());
-			indexSound = Arrays.binarySearch(pitches, presetList.get(i).getSound());
-			titles[i] = presetList.get(i).getTitle() + " - " + presetList.get(i).getBpm() + "/" + presetList.get(i).getBeats() + " - " + notes[indexBeatSound] + "|" + notes[indexSound];
-			i++;
+		String[] titles = new String[data.length];
+		for (int i = 0; i < data.length; i++) {
+			titles[i] = data[i][0];
 		}
 		return titles;
 	}

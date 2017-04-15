@@ -38,6 +38,8 @@ public class AudioGenerator {
 		return sample;
 	}
 
+
+
 	public byte[] get16BitPcm(double[] samples) {
 		byte[] generatedSound = new byte[2 * samples.length];
 		int index = 0;
