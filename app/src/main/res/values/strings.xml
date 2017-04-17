@@ -63,7 +63,7 @@
 	<string name="tock">Tock</string>
 	<string name="about_note">Note that the taps are in subdivisions of 4/4!</string>
 	<string name="reset">Reset to defaults</string>
-	<string name="save_fail_toast">Failed to save, try again!</string>
+	<string name="save_fail_toast">Didn\'t save, you can try again!</string>
 	<string name="restore_read_fail_toast">Failed to read, clear app data or try to save again!</string>
 	<string name="autosave_name">AUTOSAVE</string>
 </resources>

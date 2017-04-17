@@ -47,11 +47,12 @@ import com.nanotasks.BackgroundWork;
 import com.nanotasks.Completion;
 import com.nanotasks.Tasks;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.UUID;
+
+import static tk.radioactivemineral.metronome.SaveDialogActivity.DATA_STORAGE_FILE_NAME;
 
 /**
  * Useful links
@@ -68,16 +69,16 @@ public class MetronomeActivity extends Activity {
 	private final static int BEAT_SOUND_INDEX = 2;
 	private final static int SOUND_INDEX = 3;
 	private final static int UUID_INDEX = 4;
-	private final static int AUTO_SAVE_VALUES_ARRAY_LENGTH = 5;
+	private final static int AUTO_SAVE_VALUES_ARRAY_LENGTH = 4;
 	private final static int INIT_INTERVAL = 400;
 	private final static int NORMAL_INTERVAL = 100;
-	private final static int BUFFER_SIZE = 1024;
 	private final static double SOUND = 880;
 	private final static double BEAT_SOUND = 440;
 	private final static boolean AUTO_SAVE_FLAG_TRUE = true;
 	private final static String TAG = "MetronomeActivity";
 	public final static boolean AUTO_SAVE_FLAG_FALSE = false;
 	public final static int REQUEST_ID = 1;
+	public final static int BUFFER_SIZE = 1024;
 	public final static String PREFS_NAME = "DbPrefsFile";
 	public final static String DB_SAVE_EXISTS = "DB_EXISTS";
 	public final static String DIALOG_SAVE_ID = "INTENT_ID_DATA";
@@ -182,35 +183,24 @@ public class MetronomeActivity extends Activity {
 		sound = SOUND;
 
 		//set up the pattern
-		patternString = "\b" + getResources().getText(R.string.autosave_name) + ".*TRUE.*\\n\b";
+		patternString = "\b" + getResources().getText(R.string.autosave_name) + ".*TRUE.*" + MiscUtils.newline + "\b";
 
 		//for debugging
-		Log.i(TAG, "DATA FILE PATH!\n"+this.getFilesDir().getAbsolutePath());
+		Log.i(TAG, "DATA FILE PATH!\n" + this.getFilesDir().getAbsolutePath());
 
 		//restore previous autosave if applicable
 		//check if saved or not
 		SharedPreferences preferences = getSharedPreferences(PREFS_NAME, 0);
 		boolean save = preferences.getBoolean(DB_SAVE_EXISTS, false);
 		if (save) {
-			FileInputStream fileInputStream;
-			String fileData;
-			byte[] bytes;
-			try{
-				fileInputStream = openFileInput(SaveDialogActivity.DATA_STORAGE_FILE_NAME);
-				bytes = new byte[BUFFER_SIZE];
-				fileInputStream.read(bytes);
-				fileInputStream.close();
-				fileData = new String(bytes);
-				double[] valuesArray = getAutoSaveValues(fileData);
-				if (valuesArray != null) {
-					beats = (int) valuesArray[BEATS_INDEX];
-					bpm = (int) valuesArray[BPM_INDEX];
-					beatSound = valuesArray[BEAT_SOUND_INDEX];
-					sound = valuesArray[SOUND_INDEX];
-					uuid = valuesArray[UUID_INDEX] + "";
-				}
-			}catch (IOException e){
-				Log.w(TAG, "failed to auto-save!\n" + e.toString());
+			String fileData = MiscUtils.readSavedData(MetronomeActivity.this);
+			double[] valuesArray = getAutoSaveValues(fileData);
+			if (valuesArray != null) {
+				beats = (int) valuesArray[BEATS_INDEX];
+				bpm = (int) valuesArray[BPM_INDEX];
+				beatSound = valuesArray[BEAT_SOUND_INDEX];
+				sound = valuesArray[SOUND_INDEX];
+				uuid = getUuid(fileData);
 			}
 		}
 
@@ -235,10 +225,9 @@ public class MetronomeActivity extends Activity {
 		deleteButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (uuid != null) {
-					delete(uuid);
+				if (uuid != null && delete(uuid))
 					Toast.makeText(contextActivity, getResources().getText(R.string.deleted), Toast.LENGTH_SHORT).show();
-				} else
+				else
 					Toast.makeText(contextActivity, getResources().getText(R.string.nothing_delete), Toast.LENGTH_SHORT).show();
 			}
 		});
@@ -338,49 +327,51 @@ public class MetronomeActivity extends Activity {
 		super.onActivityResult(requestCode, resultCode, data);
 		switch (requestCode) {
 			case REQUEST_ID:
-				if (resultCode != Activity.RESULT_OK)
+				if (resultCode != Activity.RESULT_OK || !data.getExtras().getBoolean(SaveDialogActivity.EMPTY_NAME_FLAG_INTENT_NAME))
 					Toast.makeText(contextActivity, getResources().getText(R.string.save_fail_toast), Toast.LENGTH_SHORT).show();
 		}
 	}
+
 
 	@Override
 	protected void onPause() {
 		super.onPause();
 		//delete previous instances
-		FileInputStream fileInputStream;
-		String fileData = null;
-		byte[] bytes;
-		try{
-			fileInputStream = openFileInput(SaveDialogActivity.DATA_STORAGE_FILE_NAME);
-			bytes = new byte[BUFFER_SIZE];
-			fileInputStream.read(bytes);
-			fileInputStream.close();
-			fileData = new String(bytes);
-			fileData = MiscUtils.removeAutoSave(fileData, MetronomeActivity.this);
-		}catch (IOException e){
-			Log.w(TAG, "failed to auto-save!\n" + e.toString());
-		}
-		//auto-save
-		if(fileData != null){
-			FileOutputStream fileOutputStream;
-			String data = MiscUtils.prepareForStorage(getResources().getText(R.string.autosave_name).toString(), beats, bpm, MetronomeActivity.AUTO_SAVE_FLAG_TRUE, beatSound, sound, UUID.randomUUID().toString());
-			try{
-				fileOutputStream = openFileOutput(SaveDialogActivity.DATA_STORAGE_FILE_NAME, Context.MODE_PRIVATE);
-				//concatenate the old and new data and write to file
-				data = fileData + data;
-				fileOutputStream.write(data.getBytes());
+		FileOutputStream fileOutputStream;
+		String data, oldData;
+		boolean success = true;
+		//check if the file exists, create it if not
+		if (!MiscUtils.fileExists(MetronomeActivity.this, SaveDialogActivity.DATA_STORAGE_FILE_NAME)) {
+			try {
+				fileOutputStream = openFileOutput(DATA_STORAGE_FILE_NAME, Context.MODE_PRIVATE);
+				fileOutputStream.write("".getBytes());
 				fileOutputStream.close();
-			}catch (IOException e){
-				Log.w(TAG, "failed to auto-save!\n" + e.toString());
+			} catch (IOException e) {
+				Log.w(TAG, "failed to read/write!\n" + e.toString());
 			}
-			//set the flag of a successful save
-			SharedPreferences preferences = getSharedPreferences(PREFS_NAME, 0);
-			SharedPreferences.Editor editor = preferences.edit();
-			editor.putBoolean(DB_SAVE_EXISTS, true);
-			//commit
-			editor.apply();
 		}
+		data = MiscUtils.prepareForStorage(getResources().getText(R.string.autosave_name).toString(), beats, bpm, MetronomeActivity.AUTO_SAVE_FLAG_TRUE, beatSound, sound, UUID.randomUUID().toString());
+		try {
+			//save the data
+			//read the old data
+			oldData = MiscUtils.removeAutoSave(MiscUtils.readSavedData(MetronomeActivity.this), MetronomeActivity.this);
+			fileOutputStream = openFileOutput(DATA_STORAGE_FILE_NAME, Context.MODE_PRIVATE);
+			fileOutputStream.write((oldData + data).getBytes());
+			fileOutputStream.close();
+		} catch (IOException ex) {
+			Log.w(TAG, "failed to save!\n" + ex.toString());
+			Toast.makeText(MetronomeActivity.this, getResources().getText(R.string.save_fail_toast), Toast.LENGTH_SHORT).show();
+			success = false;
+		}
+
+		//set the flag of the save
+		SharedPreferences preferences = getSharedPreferences(MetronomeActivity.PREFS_NAME, 0);
+		SharedPreferences.Editor editor = preferences.edit();
+		editor.putBoolean(MetronomeActivity.DB_SAVE_EXISTS, success);
+		//commit
+		editor.apply();
 	}
+
 
 	//overflow menu setup
 	@Override
@@ -403,34 +394,37 @@ public class MetronomeActivity extends Activity {
 	}
 
 	//delete from db
-	private void delete(String uuid) {
+	private boolean delete(String uuid) {
 		//stop the metronome
 		metronomeStop();
 		//delete
-		FileInputStream fileInputStream;
-		String fileData = null;
-		byte[] bytes;
-		try{
-			fileInputStream = openFileInput(SaveDialogActivity.DATA_STORAGE_FILE_NAME);
-			bytes = new byte[BUFFER_SIZE];
-			fileInputStream.read(bytes);
-			fileInputStream.close();
-			fileData = new String(bytes);
-			fileData = MiscUtils.removeByUUID(fileData, uuid);
-		}catch (IOException e){
-			Log.w(TAG, "failed to delete!\n" + e.toString());
+		//check if the file exists
+		if (!MiscUtils.fileExists(MetronomeActivity.this, SaveDialogActivity.DATA_STORAGE_FILE_NAME)) {
+			Toast.makeText(MetronomeActivity.this, "Nothing to delete, no saved presets!", Toast.LENGTH_LONG).show();
+			return false;
 		}
+		String fileData;
+		fileData = MiscUtils.removeAutoSave(MiscUtils.readSavedData(MetronomeActivity.this), MetronomeActivity.this);
+		//check if the user was trying to remove an auto-save
+		if (fileData == null) {
+			Toast.makeText(MetronomeActivity.this, "Nothing to delete, no saved presets! (auto-save)", Toast.LENGTH_LONG).show();
+			return false;
+		}
+		fileData = MiscUtils.removeByUUID(fileData, uuid);
 		//save the changes
-		if(fileData != null){
+		if (fileData != null) {
 			FileOutputStream fileOutputStream;
-			try{
-				fileOutputStream = openFileOutput(SaveDialogActivity.DATA_STORAGE_FILE_NAME, Context.MODE_PRIVATE);
+			try {
+				fileOutputStream = openFileOutput(DATA_STORAGE_FILE_NAME, Context.MODE_PRIVATE);
 				fileOutputStream.write(fileData.getBytes());
 				fileOutputStream.close();
-			}catch (IOException e){
+				return true;
+			} catch (IOException e) {
 				Log.w(TAG, "failed to delete!\n" + e.toString());
+				return false;
 			}
 		}
+		return false;
 	}
 
 	//NOTICE: I know that the tick and tock options are REVERSED, but for some reason if they aren't reversed in the code they get reversed somewhere else!
@@ -477,27 +471,17 @@ public class MetronomeActivity extends Activity {
 		}).show();
 	}
 
-	//TODO: add a check for the existence of the storage file!
 	//restore dialog
 	private void restoreDialog() {
 		//stop the metronome
 		metronomeStop();
 		//list of all the presets
-		FileInputStream fileInputStream;
-		final String fileData;
-		byte[] buffer;
-		StringBuffer stringBuffer = new StringBuffer("");
-		int index;
-		try{
-			fileInputStream = openFileInput(SaveDialogActivity.DATA_STORAGE_FILE_NAME);
-			buffer = new byte[BUFFER_SIZE];
-			while ((index = fileInputStream.read(buffer))!=-1)
-				stringBuffer.append(new String(buffer, 0, index));
-			fileInputStream.close();
-			fileData = stringBuffer.toString();
-			final String[][] parsedData = MiscUtils.parseSaveDataList(fileData);
-			final String[][] fullParsedData = MiscUtils.parseSaveDataArrays(fileData);
-			if (parsedData != null){
+		String data = MiscUtils.readSavedData(MetronomeActivity.this);
+		data = MiscUtils.removeAutoSave(data, MetronomeActivity.this);
+		if (data != null && !data.isEmpty()) {
+			final String[][] parsedData = MiscUtils.parseSaveDataList(data);
+			final String[][] fullParsedData = MiscUtils.parseSaveDataArrays(data);
+			if (parsedData != null) {
 				AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity);
 				final String[] titles = getTitles(parsedData);
 				builder.setSingleChoiceItems(titles, 0, null).setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
@@ -534,22 +518,24 @@ public class MetronomeActivity extends Activity {
 						if (((AlertDialog) dialog).getListView() != null) {
 							int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
 							//delete the selection
-							delete(parsedData[selectedPosition][2]);
+							delete(parsedData[selectedPosition][1]);
 						}
 					}
 				}).show();
-			}else
+			} else {
 				Toast.makeText(contextActivity, getResources().getText(R.string.no_saved_presets_toast), Toast.LENGTH_SHORT).show();
-			double[] valuesArray = getAutoSaveValues(fileData);
-			if (valuesArray != null) {
-				beats = (int) valuesArray[BEATS_INDEX];
-				bpm = (int) valuesArray[BPM_INDEX];
-				beatSound = valuesArray[BEAT_SOUND_INDEX];
-				sound = valuesArray[SOUND_INDEX];
-				uuid = valuesArray[UUID_INDEX] + "";
+				double[] valuesArray = getAutoSaveValues(data);
+				if (valuesArray != null) {
+					beats = (int) valuesArray[BEATS_INDEX];
+					bpm = (int) valuesArray[BPM_INDEX];
+					beatSound = valuesArray[BEAT_SOUND_INDEX];
+					sound = valuesArray[SOUND_INDEX];
+					uuid = valuesArray[UUID_INDEX] + "";
+				}
 			}
-		}catch (IOException e){
-			Log.w(TAG, "failed to restore!\n" + e.toString());
+		}else {
+			Log.i(TAG, "user attempted restore without having any data to restore from!");
+			Toast.makeText(MetronomeActivity.this,"Nothing saved to restore from!", Toast.LENGTH_LONG).show();
 		}
 	}
 
@@ -602,10 +588,10 @@ public class MetronomeActivity extends Activity {
 		//display the dialog to the user
 		dialog.show();
 		//set the background color
-		try{
+		try {
 			dialog.getWindow().setBackgroundDrawableResource(R.color.colorPrimaryDark);
-		}catch (NullPointerException e){
-			Log.e(TAG, "about page\n"+ e.toString());
+		} catch (NullPointerException e) {
+			Log.e(TAG, "about page\n" + e.toString());
 		}
 	}
 
@@ -779,22 +765,37 @@ public class MetronomeActivity extends Activity {
 	};
 
 	//used to find and return the values of the auto-save preset
-	private double[] getAutoSaveValues(String data){
+	private double[] getAutoSaveValues(String data) {
 		if (data == null)
 			return null;
 		double[] values = new double[AUTO_SAVE_VALUES_ARRAY_LENGTH];
-		String[] parsedDataStrings = MiscUtils.parseSaveData(MiscUtils.getAutoSave(data, MetronomeActivity.this));
+		String dataString = null;
+		dataString = MiscUtils.getAutoSave(data, MetronomeActivity.this);
+		if (dataString == null)
+			return null;
+		String[] parsedDataStrings = MiscUtils.parseSaveData(dataString);
 		values[BEATS_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.BEATS_INDEX]);
 		values[BPM_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.BPM_INDEX]);
 		values[BEAT_SOUND_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.BEAT_SOUND_INDEX]);
 		values[SOUND_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.SOUND_INDEX]);
-		values[UUID_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.UUID_INDEX]);
 		return values;
 	}
 
+	//used to get the uuid String!!
+	private String getUuid(String data) {
+		if (data == null)
+			return null;
+		String dataString = null;
+		dataString = MiscUtils.getAutoSave(data, MetronomeActivity.this);
+		if (dataString == null)
+			return null;
+		String[] parsedDataStrings = MiscUtils.parseSaveData(dataString);
+		return parsedDataStrings[MiscUtils.UUID_INDEX];
+	}
+
 	//used to generate a String array of titles from the presets
-	private String[] getTitles(String[][] data){
-		if(data == null)
+	private String[] getTitles(String[][] data) {
+		if (data == null)
 			return null;
 		String[] titles = new String[data.length];
 		for (int i = 0; i < data.length; i++) {
