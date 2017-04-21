@@ -325,13 +325,15 @@ public class MetronomeActivity extends Activity {
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
+		boolean flag = data.getExtras().getBoolean(SaveDialogActivity.EMPTY_NAME_FLAG_INTENT_NAME);
 		switch (requestCode) {
 			case REQUEST_ID:
-				if (resultCode != Activity.RESULT_OK || !data.getExtras().getBoolean(SaveDialogActivity.EMPTY_NAME_FLAG_INTENT_NAME))
+				if (flag)
 					Toast.makeText(contextActivity, getResources().getText(R.string.save_fail_toast), Toast.LENGTH_SHORT).show();
+				else
+					Toast.makeText(contextActivity, getResources().getText(R.string.save_success_toast), Toast.LENGTH_SHORT).show();
 		}
 	}
-
 
 	@Override
 	protected void onPause() {
