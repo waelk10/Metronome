@@ -16,7 +16,9 @@
   ~      along with Metronome.  If not, see <http://www.gnu.org/licenses/>.
   -->
 
-<resources>
+<resources
+	xmlns:tools="http://schemas.android.com/tools"
+	tools:ignore="MissingTranslation">
 	<string name="app_name">Metronome</string>
 	<string name="start">Start/Stop</string>
 	<string name="bpm">BPM:</string>
