@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017.
+ * Copyright (c) 2019.
  * This file is part of Metronome.
  *
  *      Metronome is free software: you can redistribute it and/or modify
@@ -38,8 +38,8 @@ public class MiscUtils {
 	private final static String TRUE = "TRUE";
 	private final static String FALSE = "FALSE";
 	private final static String READ_LOG_TAG = "MiscUtils_readSavedData";
-	private final static int AUTOSAVE_LENGTH = 8;
-	private final static int FIELDS = 7;
+	public final static int WAVE_INDEX = 7;
+	private final static int AUTOSAVE_LENGTH = 9;
 	public final static char newline = '|';
 	public final static char separator = ';';
 	public final static int BEATS_INDEX = 1;
@@ -47,29 +47,30 @@ public class MiscUtils {
 	public final static int BEAT_SOUND_INDEX = 4;
 	public final static int SOUND_INDEX = 5;
 	public final static int UUID_INDEX = 6;
+	private final static int FIELDS = 8;
 
-	public static String prepareForStorage(String name, int beats, int bpm, boolean autosave, double beatSound, double sound, String uuid) {
+	public static String prepareForStorage(String name, int beats, int bpm, boolean autosave, double beatSound, double sound, String uuid, String wave) {
 		if (autosave)
-			return name + separator + beats + separator + bpm + separator + TRUE + separator + beatSound + separator + sound + separator + uuid + newline;
-		return name + separator + beats + separator + bpm + separator + FALSE + separator + beatSound + separator + sound + separator + uuid + newline;
+			return name + separator + beats + separator + bpm + separator + TRUE + separator + beatSound + separator + sound + separator + uuid + separator + wave + newline;
+		return name + separator + beats + separator + bpm + separator + FALSE + separator + beatSound + separator + sound + separator + uuid + separator + wave + newline;
 	}
 
 	//prepare the saved data for a list display
 	public static String[][] parseSaveDataList(String data) {
 		int i = 0, j = 0, count = 1;
-		String tmpData;
+		StringBuffer stringBuffer;
 		List<String> stringList = new ArrayList<String>();
 		String[][] results;
 		while (i < data.length()) {
-			if (count == 8)
+			if (count == 9)
 				count = 1;
-			tmpData = "";
+			stringBuffer = new StringBuffer();
 			while (data.charAt(i) != separator && data.charAt(i) != newline && i < data.length()) {
-				tmpData = tmpData + data.charAt(i);
+				stringBuffer.append(data.charAt(i));
 				i++;
 			}
 			if (count == 1 || count == 7)
-				stringList.add(tmpData);
+				stringList.add(stringBuffer.toString());
 			count++;
 			j++;
 			i++;
@@ -122,7 +123,7 @@ public class MiscUtils {
 		results = new String[(stringList.size() / FIELDS)][FIELDS];
 		j = 0;
 		for (i = 0; i < results.length; i++) {
-			for (int k = 0; k < 7; k++) {
+			for (int k = 0; k < FIELDS; k++) {
 				results[i][k] = stringList.get(j);
 				j++;
 			}
@@ -137,9 +138,11 @@ public class MiscUtils {
 		int i;
 		for (i = 0; i < data.length(); i++) {
 			if (data.charAt(i) == letter_start_capital)
-				if (i + AUTOSAVE_LENGTH < data.length())
-					if (data.substring(i, i + AUTOSAVE_LENGTH).equals(context.getResources().getText(R.string.autosave_name).toString()))
-						data = data.replace(data.substring(i, newlineIndex(data, i)), "");
+				if (i + AUTOSAVE_LENGTH < data.length()) {
+					String subString = data.substring(i, i + AUTOSAVE_LENGTH - 1);
+					if (subString.contentEquals(context.getResources().getText(R.string.autosave_name).toString()))
+						data = data.replace(data.substring(i, newlineIndex(data, i) + 1), "");
+				}
 		}
 		//cleanup the dual-separator glitch
 		String double_newline = newline + "" + newline;
@@ -173,7 +176,7 @@ public class MiscUtils {
 		while (index != data.length() && data.charAt(index) != newline)
 			index++;
 		if (index == data.length())
-			index--;
+			index = -1;
 		return index;
 	}
 
@@ -205,7 +208,7 @@ public class MiscUtils {
 
 	//read the data from the file
 	public static String readSavedData(Context context) {
-		StringBuffer stringBuffer = new StringBuffer("");
+		StringBuffer stringBuffer = new StringBuffer();
 		if (!fileExists(context, SaveDialogActivity.DATA_STORAGE_FILE_NAME))
 			return null;
 		try {
@@ -227,8 +230,6 @@ public class MiscUtils {
 
 	public static boolean fileExists(Context context, String filename) {
 		File file = context.getFileStreamPath(filename);
-		if (file == null || !file.exists())
-			return false;
-		return true;
+		return (file != null && file.exists());
 	}
 }

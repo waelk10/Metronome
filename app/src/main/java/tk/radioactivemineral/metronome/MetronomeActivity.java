@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016.
+ * Copyright (c) 2019.
  * This file is part of Metronome.
  *
  *      Metronome is free software: you can redistribute it and/or modify
@@ -37,6 +37,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -64,6 +65,17 @@ import static tk.radioactivemineral.metronome.SaveDialogActivity.DATA_STORAGE_FI
 //TODO: EXTREMELY IMPORTANT: WHENEVER YOU PUSH A NEW VERSION TO GITHUB, MAKE SURE TO MANUALLY UPDATE THE CHANGES OF "build.gradle" TO "build.gradle-sample", WHILE EXCLUDING THE SIGNING CONFIG!!!!!!
 
 public class MetronomeActivity extends Activity {
+	public final static boolean AUTO_SAVE_FLAG_FALSE = false;
+	public final static int REQUEST_ID = 1;
+	//public final static int BUFFER_SIZE = 1024;
+	public final static String PREFS_NAME = "DbPrefsFile";
+	public final static String DB_SAVE_EXISTS = "DB_EXISTS";
+	public final static String DIALOG_SAVE_ID = "INTENT_ID_DATA";
+	public final static String DIALOG_SAVE_BPM = "INTENT_BPM_DATA";
+	public final static String DIALOG_SAVE_BEATS = "INTENT_BEATS_DATA";
+	public final static String DIALOG_SAVE_BEAT_SOUND = "INTENT_BEAT_SOUND_DATA";
+	public final static String DIALOG_SAVE_SOUND = "INTENT_SOUND_DATA";
+	public final static String DIALOG_SAVE_WAVE = "INTENT_WAVE_DATA";
 	private final static int BPM_INDEX = 0;
 	private final static int BEATS_INDEX = 1;
 	private final static int BEAT_SOUND_INDEX = 2;
@@ -76,17 +88,6 @@ public class MetronomeActivity extends Activity {
 	private final static double BEAT_SOUND = 440;
 	private final static boolean AUTO_SAVE_FLAG_TRUE = true;
 	private final static String TAG = "MetronomeActivity";
-	public final static boolean AUTO_SAVE_FLAG_FALSE = false;
-	public final static int REQUEST_ID = 1;
-	public final static int BUFFER_SIZE = 1024;
-	public final static String PREFS_NAME = "DbPrefsFile";
-	public final static String DB_SAVE_EXISTS = "DB_EXISTS";
-	public final static String DIALOG_SAVE_ID = "INTENT_ID_DATA";
-	public final static String DIALOG_SAVE_BPM = "INTENT_BPM_DATA";
-	public final static String DIALOG_SAVE_BEATS = "INTENT_BEATS_DATA";
-	public final static String DIALOG_SAVE_BEAT_SOUND = "INTENT_BEAT_SOUND_DATA";
-	public final static String DIALOG_SAVE_SOUND = "INTENT_SOUND_DATA";
-
 	TextView textViewBPM;
 	TextView textViewBeats;
 
@@ -106,6 +107,10 @@ public class MetronomeActivity extends Activity {
 	Button roundDownButton;
 	Button toneButton;
 
+	RadioButton radioButtonSine;
+	RadioButton radioButtonSquare;
+	RadioButton radioButtonSawtooth;
+
 	ToggleButton toggleButton;
 
 	Metronome metronome;
@@ -117,6 +122,7 @@ public class MetronomeActivity extends Activity {
 
 	String patternString;
 	String uuid;
+	String wave;
 
 	Long currentTime;
 	Long oldTime;
@@ -131,6 +137,167 @@ public class MetronomeActivity extends Activity {
 
 	double beatSound;
 	double sound;
+	//used for the tone menu button
+	private View.OnClickListener toneClickListener = new View.OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			noteDialog();
+		}
+	};
+	//used for setting the number of the bea(s)ts per minute
+	private View.OnClickListener bpmClickListener = new View.OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			//stop and reset the metronome on change of values
+			metronomeStop();
+			//button logic
+			switch (v.getId()) {
+				case R.id.buttonPlusOne:
+					bpm++;
+					textViewBPM.setText(String.format(Locale.US, "%d", bpm));
+					break;
+				case R.id.buttonMinusOne:
+					//make sure not to go under zero
+					if (bpm - 1 >= 0) {
+						bpm--;
+						textViewBPM.setText(String.format(Locale.US, "%d", bpm));
+					}
+					break;
+				case R.id.buttonPlusTen:
+					bpm += 10;
+					textViewBPM.setText(String.format(Locale.US, "%d", bpm));
+					break;
+				case R.id.buttonMinusTen:
+					//make sure not to go under zero
+					if (bpm - 10 >= 0) {
+						bpm -= 10;
+						textViewBPM.setText(String.format(Locale.US, "%d", bpm));
+					}
+					break;
+
+			}
+			//reset the id
+			uuid = null;
+		}
+	};
+	//used for the tap tempo tap button
+	private View.OnClickListener tapClickListener = new View.OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			//stop the metronome
+			metronomeStop();
+			//check if initial tap
+			if (taps == -1) {
+				taps = 0;
+				taps++;
+				oldTime = System.currentTimeMillis();
+				totalTime = 0L;
+			} else {
+				taps++;
+				currentTime = System.currentTimeMillis();
+				timeDeltaSum += (currentTime - oldTime);
+				oldTime = currentTime;
+				totalTime += currentTime;
+			}
+		}
+	};
+	private View.OnClickListener stopTapClickListener = new View.OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			//check if there are enough taps
+			if (taps == -1 || taps == 0 || totalTime == 0L) {
+				Toast.makeText(MetronomeActivity.this, "Not enough taps, at least two needed!", Toast.LENGTH_SHORT).show();
+				//reset
+				//stop the metronome
+				metronomeStop();
+				taps = -1;
+				oldTime = 0L;
+				currentTime = 0L;
+				timeDeltaSum = 0L;
+
+				return;
+			}
+			//bpm calculation
+			TapTempoUtils tapTempoUtils = new TapTempoUtils(taps - 1, timeDeltaSum);
+			bpm = tapTempoUtils.calculateBPM();
+			textViewBPM.setText(String.format(Locale.US, "%d", bpm));
+			taps = -1;
+			oldTime = 0L;
+			currentTime = 0L;
+			timeDeltaSum = 0L;
+		}
+	};
+	//used for rounding the BPM value up
+	private View.OnClickListener roundUpListener = new View.OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			if (bpm % 10 != 0)
+				if (((bpm / 10 + 1) * 10) != bpm) {
+					bpm = bpm / 10 + 1;
+					bpm = bpm * 10;
+					textViewBPM.setText(String.format(Locale.US, "%d", bpm));
+				}
+		}
+	};
+	//used for rounding the BPM value down
+	private View.OnClickListener roundDownListener = new View.OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			if (bpm % 10 != 0)
+				if ((bpm - 10) >= 0) {
+					bpm = bpm / 10;
+					bpm = bpm * 10;
+					textViewBPM.setText(String.format(Locale.US, "%d", bpm));
+				} else {
+					bpm = 0;
+					textViewBPM.setText(String.format(Locale.US, "%d", bpm));
+				}
+		}
+	};
+	//long click up button
+	private View.OnLongClickListener roundUpLongClickListener = new View.OnLongClickListener() {
+		@Override
+		public boolean onLongClick(View v) {
+			Toast.makeText(contextActivity, getResources().getText(R.string.round_up_toast), Toast.LENGTH_SHORT).show();
+			return true;
+		}
+	};
+	//long click down button
+	private View.OnLongClickListener roundDownLongClickListener = new View.OnLongClickListener() {
+		@Override
+		public boolean onLongClick(View v) {
+			Toast.makeText(contextActivity, getResources().getText(R.string.round_down_toast), Toast.LENGTH_SHORT).show();
+			return true;
+		}
+	};
+	//used for setting the number of beats
+	private View.OnClickListener beatsClickListener = new View.OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			//stop and reset the metronome on change of values
+			metronomeStop();
+			//button logic
+			switch (v.getId()) {
+				case R.id.buttonBeatPlusOne:
+					beats++;
+					metronome.setBeat(beats);
+					textViewBeats.setText(String.format(Locale.US, "%d", beats));
+					break;
+				case R.id.buttonBeatMinusOne:
+					//make sure not to go under zero
+					if (beats - 1 >= 0) {
+						beats--;
+						metronome.setBeat(beats);
+						textViewBeats.setText(String.format(Locale.US, "%d", beats));
+					}
+					break;
+			}
+			//reset the metronome
+			currentMetronome = metronome.copyMetronome();
+			//reset the id
+			uuid = null;
+		}
+	};
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -139,28 +306,32 @@ public class MetronomeActivity extends Activity {
 
 		//find view elements
 		//TextViews
-		textViewBPM = (TextView) findViewById(R.id.textViewBPM);
-		textViewBeats = (TextView) findViewById(R.id.textViewBeats);
+		textViewBPM = findViewById(R.id.textViewBPM);
+		textViewBeats = findViewById(R.id.textViewBeats);
 		//Buttons
-		startButton = (Button) findViewById(R.id.buttonStart);
-		bpmPlusOneButton = (Button) findViewById(R.id.buttonPlusOne);
-		bpmPlusTenButton = (Button) findViewById(R.id.buttonPlusTen);
-		bpmMinusOneButton = (Button) findViewById(R.id.buttonMinusOne);
-		bpmMinusTenButton = (Button) findViewById(R.id.buttonMinusTen);
-		beatsPlusOneButton = (Button) findViewById(R.id.buttonBeatPlusOne);
-		beatsMinusOneButton = (Button) findViewById(R.id.buttonBeatMinusOne);
-		deleteButton = (Button) findViewById(R.id.button_delete);
-		saveButton = (Button) findViewById(R.id.button_save);
-		restoreButton = (Button) findViewById(R.id.button_restore);
-		roundUpButton = (Button) findViewById(R.id.buttonRoundUp);
-		roundDownButton = (Button) findViewById(R.id.buttonRoundDown);
-		toneButton = (Button) findViewById(R.id.button_tone);
+		startButton = findViewById(R.id.buttonStart);
+		bpmPlusOneButton = findViewById(R.id.buttonPlusOne);
+		bpmPlusTenButton = findViewById(R.id.buttonPlusTen);
+		bpmMinusOneButton = findViewById(R.id.buttonMinusOne);
+		bpmMinusTenButton = findViewById(R.id.buttonMinusTen);
+		beatsPlusOneButton = findViewById(R.id.buttonBeatPlusOne);
+		beatsMinusOneButton = findViewById(R.id.buttonBeatMinusOne);
+		deleteButton = findViewById(R.id.button_delete);
+		saveButton = findViewById(R.id.button_save);
+		restoreButton = findViewById(R.id.button_restore);
+		roundUpButton = findViewById(R.id.buttonRoundUp);
+		roundDownButton = findViewById(R.id.buttonRoundDown);
+		toneButton = findViewById(R.id.button_tone);
+		//RadioButton
+		radioButtonSine = findViewById(R.id.radio_sine);
+		radioButtonSquare = findViewById(R.id.radio_square);
+		radioButtonSawtooth = findViewById(R.id.radio_sawtooth);
 		//ToggleButton
-		toggleButton = (ToggleButton) findViewById(R.id.toggleButton);
+		toggleButton = findViewById(R.id.toggleButton);
 		//Tap buttons
-		beatsTapButton = (Button) findViewById(R.id.buttonTap);
+		beatsTapButton = findViewById(R.id.buttonTap);
 		//Tap start button
-		beatsTapStopButton = (Button) findViewById(R.id.buttonStopTap);
+		beatsTapStopButton = findViewById(R.id.buttonStopTap);
 
 		//set context and flag
 		contextActivity = this;
@@ -182,6 +353,9 @@ public class MetronomeActivity extends Activity {
 		beatSound = BEAT_SOUND;
 		sound = SOUND;
 
+		//initialize the wave type variable
+		wave = Metronome.WAVE_TYPE_SINE;
+
 		//set up the pattern
 		patternString = "\b" + getResources().getText(R.string.autosave_name) + ".*TRUE.*" + MiscUtils.newline + "\b";
 
@@ -201,6 +375,8 @@ public class MetronomeActivity extends Activity {
 				beatSound = valuesArray[BEAT_SOUND_INDEX];
 				sound = valuesArray[SOUND_INDEX];
 				uuid = getUuid(fileData);
+				String[] strings = MiscUtils.parseSaveData(fileData);
+				wave = strings[MiscUtils.WAVE_INDEX];
 			}
 		}
 
@@ -211,8 +387,11 @@ public class MetronomeActivity extends Activity {
 		//initialize the PitchGenerator object
 		pitchGenerator = new PitchGenerator();
 
+		//initialize wavetype if null
+		if (wave == null)
+			wave = Metronome.WAVE_TYPE_SINE;
 		//initialize the metronome object
-		metronome = new Metronome();
+		metronome = new Metronome(wave);
 		metronome.setBeatSound(beatSound);
 		metronome.setSound(sound);
 		metronome.setBpm(bpm);
@@ -261,7 +440,7 @@ public class MetronomeActivity extends Activity {
 						//execute the metronome with current settings asynchronously
 						Tasks.executeInBackground(contextActivity, new BackgroundWork<Boolean>() {
 							@Override
-							public Boolean doInBackground() throws Exception {
+							public Boolean doInBackground() {
 								return currentMetronome.playRes();
 							}
 						}, new Completion<Boolean>() {
@@ -325,13 +504,18 @@ public class MetronomeActivity extends Activity {
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
-		boolean flag = data.getExtras().getBoolean(SaveDialogActivity.EMPTY_NAME_FLAG_INTENT_NAME);
-		switch (requestCode) {
-			case REQUEST_ID:
-				if (flag)
-					Toast.makeText(contextActivity, getResources().getText(R.string.save_fail_toast), Toast.LENGTH_SHORT).show();
-				else
-					Toast.makeText(contextActivity, getResources().getText(R.string.save_success_toast), Toast.LENGTH_SHORT).show();
+		try {
+			boolean flag = data.getExtras().getBoolean(SaveDialogActivity.EMPTY_NAME_FLAG_INTENT_NAME);
+			switch (requestCode) {
+				case REQUEST_ID:
+					if (flag)
+						Toast.makeText(contextActivity, getResources().getText(R.string.save_fail_toast), Toast.LENGTH_SHORT).show();
+					else
+						Toast.makeText(contextActivity, getResources().getText(R.string.save_success_toast), Toast.LENGTH_SHORT).show();
+			}
+		} catch (NullPointerException e) {
+			Log.w(TAG, "NullPointerException while getting result (onActivityResult), output:\n");
+			Log.w(TAG, e.toString());
 		}
 	}
 
@@ -352,13 +536,14 @@ public class MetronomeActivity extends Activity {
 				Log.w(TAG, "failed to read/write!\n" + e.toString());
 			}
 		}
-		data = MiscUtils.prepareForStorage(getResources().getText(R.string.autosave_name).toString(), beats, bpm, MetronomeActivity.AUTO_SAVE_FLAG_TRUE, beatSound, sound, UUID.randomUUID().toString());
+		data = MiscUtils.prepareForStorage(getResources().getText(R.string.autosave_name).toString(), beats, bpm, MetronomeActivity.AUTO_SAVE_FLAG_TRUE, beatSound, sound, UUID.randomUUID().toString(), wave);
 		try {
 			//save the data
 			//read the old data
 			oldData = MiscUtils.removeAutoSave(MiscUtils.readSavedData(MetronomeActivity.this), MetronomeActivity.this);
 			fileOutputStream = openFileOutput(DATA_STORAGE_FILE_NAME, Context.MODE_PRIVATE);
-			fileOutputStream.write((oldData + data).getBytes());
+			data = oldData + data;
+			fileOutputStream.write(data.getBytes());
 			fileOutputStream.close();
 		} catch (IOException ex) {
 			Log.w(TAG, "failed to save!\n" + ex.toString());
@@ -373,7 +558,6 @@ public class MetronomeActivity extends Activity {
 		//commit
 		editor.apply();
 	}
-
 
 	//overflow menu setup
 	@Override
@@ -393,6 +577,33 @@ public class MetronomeActivity extends Activity {
 				return true;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+
+	//radio buttons handling
+	public void onRadioButtonClicked(View view) {
+		// Is the button now checked?
+		// If it is checked, then stop the metronome and set everything up again.
+		if (!((RadioButton) view).isChecked())
+			return;
+
+		// Didn't return, stop the metronome.
+		metronomeStop();
+
+		// Check which radio button was clicked
+		switch (view.getId()) {
+			case R.id.radio_sine:
+				wave = Metronome.WAVE_TYPE_SINE;
+				break;
+			case R.id.radio_square:
+				wave = Metronome.WAVE_TYPE_PWM;
+				break;
+			case R.id.radio_sawtooth:
+				wave = Metronome.WAVE_TYPE_SAWTOOTH;
+				break;
+		}
+
+		//update the metronome
+		metronome.setWaveType(wave);
 	}
 
 	//delete from db
@@ -436,7 +647,7 @@ public class MetronomeActivity extends Activity {
 		metronomeStop();
 		//list the options
 		final String[] notes = pitchGenerator.getNotes();
-		AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity);
+		AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity, R.style.DialogSaveTheme);
 		builder.setSingleChoiceItems(notes, 0, null).setPositiveButton(R.string.tock, new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
@@ -484,7 +695,7 @@ public class MetronomeActivity extends Activity {
 			final String[][] parsedData = MiscUtils.parseSaveDataList(data);
 			final String[][] fullParsedData = MiscUtils.parseSaveDataArrays(data);
 			if (parsedData != null) {
-				AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity);
+				AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity, R.style.DialogSaveTheme);
 				final String[] titles = getTitles(parsedData);
 				builder.setSingleChoiceItems(titles, 0, null).setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int whichButton) {
@@ -499,17 +710,47 @@ public class MetronomeActivity extends Activity {
 							uuid = fullParsedData[selectedPosition][MiscUtils.UUID_INDEX];
 							beatSound = Double.parseDouble(fullParsedData[selectedPosition][MiscUtils.BEAT_SOUND_INDEX]);
 							sound = Double.parseDouble(fullParsedData[selectedPosition][MiscUtils.SOUND_INDEX]);
+							wave = fullParsedData[selectedPosition][MiscUtils.WAVE_INDEX];
 							textViewBPM.setText(String.format(Locale.US, "%d", bpm));
 							textViewBeats.setText(String.format(Locale.US, "%d", beats));
 							AudioGenerator audioGenerator = metronome.getAudioGenerator();
 							metronome = null;
-							metronome = new Metronome(audioGenerator);
+							//initialize wavetype if null
+							if (wave == null)
+								wave = Metronome.WAVE_TYPE_SINE;
+							metronome = new Metronome(audioGenerator, wave);
 							metronome.setBeatSound(beatSound);
 							metronome.setSound(sound);
 							metronome.setBpm(bpm);
 							metronome.setBeat(beats);
 							currentMetronome = metronome.copyMetronome();
+
+							//reset the wave UI
+							if (radioButtonSine.isChecked())
+								radioButtonSine.setChecked(false);
+							if (radioButtonSquare.isChecked())
+								radioButtonSquare.setChecked(false);
+							if (radioButtonSawtooth.isChecked())
+								radioButtonSawtooth.setChecked(false);
+							//set the right button
+							switch (wave) {
+								case Metronome.WAVE_TYPE_SINE:
+									radioButtonSine.setChecked(true);
+									break;
+								case Metronome.WAVE_TYPE_PWM:
+									radioButtonSquare.setChecked(true);
+									break;
+								case Metronome.WAVE_TYPE_SAWTOOTH:
+									radioButtonSawtooth.setChecked(true);
+									break;
+							}
 						}
+					}
+				}).setNeutralButton(R.string.cancel, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialogInterface, int i) {
+						//dismiss the dialog
+						dialogInterface.dismiss();
 					}
 				}).setNegativeButton(R.string.delete, new DialogInterface.OnClickListener() {
 					@Override
@@ -533,6 +774,8 @@ public class MetronomeActivity extends Activity {
 					beatSound = valuesArray[BEAT_SOUND_INDEX];
 					sound = valuesArray[SOUND_INDEX];
 					uuid = valuesArray[UUID_INDEX] + "";
+					String[] strings = MiscUtils.parseSaveData(data);
+					wave = strings[MiscUtils.WAVE_INDEX];
 				}
 			}
 		}else {
@@ -552,6 +795,7 @@ public class MetronomeActivity extends Activity {
 		intent.putExtra(DIALOG_SAVE_BEAT_SOUND, beatSound);
 		intent.putExtra(DIALOG_SAVE_SOUND, sound);
 		intent.putExtra(DIALOG_SAVE_ID, UUID.randomUUID().toString());
+		intent.putExtra(DIALOG_SAVE_WAVE, wave);
 		startActivityForResult(intent, REQUEST_ID);
 	}
 
@@ -571,7 +815,7 @@ public class MetronomeActivity extends Activity {
 			version = "";
 		}
 		//build the dialog
-		AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity);
+		AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity, R.style.DialogSaveTheme);
 		//build the text
 		Spanny message = new Spanny(getString(R.string.app_name) + '\n', new UnderlineSpan()).append('\n' + getString(R.string.email)).append('\n' + getString(R.string.copyright)).append('\n' + version + '\n').append('\n' + getString(R.string.about_note)).append("\n\n\n\n\n" + getString(R.string.license));
 		builder.setMessage(message).setTitle(getString(R.string.about));
@@ -589,182 +833,7 @@ public class MetronomeActivity extends Activity {
 		dialog.setView(layout);
 		//display the dialog to the user
 		dialog.show();
-		//set the background color
-		try {
-			dialog.getWindow().setBackgroundDrawableResource(R.color.colorPrimaryDark);
-		} catch (NullPointerException e) {
-			Log.e(TAG, "about page\n" + e.toString());
-		}
 	}
-
-	//used for the tone menu button
-	private View.OnClickListener toneClickListener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			noteDialog();
-		}
-	};
-
-	//used for setting the number of the bea(s)ts per minute
-	private View.OnClickListener bpmClickListener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			//stop and reset the metronome on change of values
-			metronomeStop();
-			//button logic
-			switch (v.getId()) {
-				case R.id.buttonPlusOne:
-					bpm++;
-					textViewBPM.setText(String.format(Locale.US, "%d", bpm));
-					break;
-				case R.id.buttonMinusOne:
-					//make sure not to go under zero
-					if (bpm - 1 >= 0) {
-						bpm--;
-						textViewBPM.setText(String.format(Locale.US, "%d", bpm));
-					}
-					break;
-				case R.id.buttonPlusTen:
-					bpm += 10;
-					textViewBPM.setText(String.format(Locale.US, "%d", bpm));
-					break;
-				case R.id.buttonMinusTen:
-					//make sure not to go under zero
-					if (bpm - 10 >= 0) {
-						bpm -= 10;
-						textViewBPM.setText(String.format(Locale.US, "%d", bpm));
-					}
-					break;
-
-			}
-			//reset the id
-			uuid = null;
-		}
-	};
-
-	//used for the tap tempo tap button
-	private View.OnClickListener tapClickListener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			//stop the metronome
-			metronomeStop();
-			//check if initial tap
-			if (taps == -1) {
-				taps = 0;
-				taps++;
-				oldTime = System.currentTimeMillis();
-				totalTime = 0L;
-			} else {
-				taps++;
-				currentTime = System.currentTimeMillis();
-				timeDeltaSum += (currentTime - oldTime);
-				oldTime = currentTime;
-				totalTime += currentTime;
-			}
-		}
-	};
-	private View.OnClickListener stopTapClickListener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			//check if there are enough taps
-			if (taps == -1 || taps == 0 || totalTime == 0L) {
-				Toast.makeText(MetronomeActivity.this, "Not enough taps, at least two needed!", Toast.LENGTH_SHORT).show();
-				//reset
-				//stop the metronome
-				metronomeStop();
-				taps = -1;
-				oldTime = 0L;
-				currentTime = 0L;
-				timeDeltaSum = 0L;
-
-				return;
-			}
-			//bpm calculation
-			TapTempoUtils tapTempoUtils = new TapTempoUtils(taps - 1, timeDeltaSum);
-			bpm = tapTempoUtils.calculateBPM();
-			textViewBPM.setText(String.format(Locale.US, "%d", bpm));
-			taps = -1;
-			oldTime = 0L;
-			currentTime = 0L;
-			timeDeltaSum = 0L;
-		}
-	};
-
-	//used for rounding the BPM value up
-	private View.OnClickListener roundUpListener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			if (bpm % 10 != 0)
-				if (((bpm / 10 + 1) * 10) != bpm) {
-					bpm = bpm / 10 + 1;
-					bpm = bpm * 10;
-					textViewBPM.setText(String.format(Locale.US, "%d", bpm));
-				}
-		}
-	};
-
-	//used for rounding the BPM value down
-	private View.OnClickListener roundDownListener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			if (bpm % 10 != 0)
-				if ((bpm - 10) >= 0) {
-					bpm = bpm / 10;
-					bpm = bpm * 10;
-					textViewBPM.setText(String.format(Locale.US, "%d", bpm));
-				} else {
-					bpm = 0;
-					textViewBPM.setText(String.format(Locale.US, "%d", bpm));
-				}
-		}
-	};
-
-	//long click up button
-	private View.OnLongClickListener roundUpLongClickListener = new View.OnLongClickListener() {
-		@Override
-		public boolean onLongClick(View v) {
-			Toast.makeText(contextActivity, getResources().getText(R.string.round_up_toast), Toast.LENGTH_SHORT).show();
-			return true;
-		}
-	};
-
-	//long click down button
-	private View.OnLongClickListener roundDownLongClickListener = new View.OnLongClickListener() {
-		@Override
-		public boolean onLongClick(View v) {
-			Toast.makeText(contextActivity, getResources().getText(R.string.round_down_toast), Toast.LENGTH_SHORT).show();
-			return true;
-		}
-	};
-
-	//used for setting the number of beats
-	private View.OnClickListener beatsClickListener = new View.OnClickListener() {
-		@Override
-		public void onClick(View v) {
-			//stop and reset the metronome on change of values
-			metronomeStop();
-			//button logic
-			switch (v.getId()) {
-				case R.id.buttonBeatPlusOne:
-					beats++;
-					metronome.setBeat(beats);
-					textViewBeats.setText(String.format(Locale.US, "%d", beats));
-					break;
-				case R.id.buttonBeatMinusOne:
-					//make sure not to go under zero
-					if (beats - 1 >= 0) {
-						beats--;
-						metronome.setBeat(beats);
-						textViewBeats.setText(String.format(Locale.US, "%d", beats));
-					}
-					break;
-			}
-			//reset the metronome
-			currentMetronome = metronome.copyMetronome();
-			//reset the id
-			uuid = null;
-		}
-	};
 
 	//used to find and return the values of the auto-save preset
 	private double[] getAutoSaveValues(String data) {

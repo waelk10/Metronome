@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016.
+ * Copyright (c) 2019.
  * This file is part of Metronome.
  *
  *      Metronome is free software: you can redistribute it and/or modify
@@ -18,9 +18,11 @@
 
 package tk.radioactivemineral.metronome;
 
+import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.os.Build;
 
 public class AudioGenerator {
 	private int sampleRate;
@@ -35,6 +37,24 @@ public class AudioGenerator {
 		for (int i = 0; i < samples; i++) {
 			sample[i] = Math.sin(2 * Math.PI * i / (sampleRate / frequencyOfTone));
 		}
+		return sample;
+	}
+
+	public double[] getSawtoothWave(int samples, int sampleRate, double frequencyOfTone) {
+		double[] sample = new double[samples];
+		for (int i = 0; i < samples; i++) {
+			sample[i] = 2 * (i % (sampleRate / frequencyOfTone)) / (sampleRate / frequencyOfTone) - 1;
+		}
+		return sample;
+	}
+
+	public double[] getPWMWave(int samples, int sampleRate, double frequencyOfTone) {
+		double[] sample = getSineWave(samples, sampleRate, frequencyOfTone);
+		//turn the sine wave into a PWM wave
+		for (int i = 0; i < sample.length; i++) {
+			sample[i] = Math.round(sample[i]);
+		}
+		//return the modified sample
 		return sample;
 	}
 
@@ -54,10 +74,19 @@ public class AudioGenerator {
 	}
 
 	public void createPlayer() {
-		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+		//check API version and setup the AudioTrack object accordingly, anything under 26 uses first option.
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
+			audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
 				sampleRate, AudioFormat.CHANNEL_OUT_MONO,
 				AudioFormat.ENCODING_PCM_16BIT, sampleRate,
 				AudioTrack.MODE_STREAM);
+		else {
+			AudioAttributes.Builder audioAttribuitesBuilder = new AudioAttributes.Builder();
+			audioAttribuitesBuilder.setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC);
+			AudioFormat.Builder audioFormatBuilder = new AudioFormat.Builder();
+			audioFormatBuilder.setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(sampleRate).setChannelMask(AudioFormat.CHANNEL_OUT_MONO);
+			audioTrack = new AudioTrack.Builder().setAudioAttributes(audioAttribuitesBuilder.build()).setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY).setAudioFormat(audioFormatBuilder.build()).build();
+		}
 		audioTrack.play();
 	}
 

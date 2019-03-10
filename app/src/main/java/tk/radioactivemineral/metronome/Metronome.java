@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016.
+ * Copyright (c) 2019.
  * This file is part of Metronome.
  *
  *      Metronome is free software: you can redistribute it and/or modify
@@ -19,25 +19,29 @@
 package tk.radioactivemineral.metronome;
 
 public class Metronome {
+	public final static String WAVE_TYPE_SINE = "SINE";
+	public final static String WAVE_TYPE_PWM = "PWM";
+	public final static String WAVE_TYPE_SAWTOOTH = "SAWTOOTH";
+	private final int tick = 1000; // samples of tick
 	private double bpm;
 	private int beat;
 	private int silence;
-
 	private double beatSound;
 	private double sound;
-	private final int tick = 1000; // samples of tick
-
+	private String wave;
 	private boolean play = true;
-
 	private AudioGenerator audioGenerator;
 
-	public Metronome() {
+	public Metronome(String waveType) {
 		audioGenerator = new AudioGenerator(8000);
 		audioGenerator.createPlayer();
+		wave = waveType;
 	}
-	public Metronome(AudioGenerator audioGenerator) {
+
+	public Metronome(AudioGenerator audioGenerator, String waveType) {
 		this.audioGenerator = audioGenerator;
 		audioGenerator.createPlayer(audioGenerator.getAudioTrack());
+		wave = waveType;
 	}
 
 	public void calcSilence() {
@@ -50,6 +54,19 @@ public class Metronome {
 				audioGenerator.getSineWave(this.tick, 8000, beatSound);
 		double[] tock =
 				audioGenerator.getSineWave(this.tick, 8000, sound);
+		//start according to wavetype
+		if (!wave.contentEquals(WAVE_TYPE_SINE))
+			switch (wave) {
+				//default is sine, so it isn't listed here
+				case Metronome.WAVE_TYPE_PWM:
+					tick = audioGenerator.getPWMWave(this.tick, 8000, beatSound);
+					tock = audioGenerator.getPWMWave(this.tick, 8000, sound);
+					break;
+				case Metronome.WAVE_TYPE_SAWTOOTH:
+					tick = audioGenerator.getSawtoothWave(this.tick, 8000, beatSound);
+					tock = audioGenerator.getSawtoothWave(this.tick, 8000, sound);
+					break;
+			}
 		double silence = 0;
 		double[] sound = new double[8000];
 		int t = 0, s = 0, b = 0;
@@ -118,12 +135,42 @@ public class Metronome {
 		return audioGenerator;
 	}
 
+	public String getWaveType() {
+		return wave;
+	}
+
+	public void setWaveType(String waveType) {
+		switch (waveType) {
+			case Metronome.WAVE_TYPE_SINE:
+				this.setWaveTypeSine();
+				break;
+			case Metronome.WAVE_TYPE_PWM:
+				this.setWaveTypePwm();
+				break;
+			case Metronome.WAVE_TYPE_SAWTOOTH:
+				this.setWaveTypeSawtooth();
+				break;
+		}
+	}
+
+	public void setWaveTypeSine() {
+		this.wave = WAVE_TYPE_SINE;
+	}
+
+	public void setWaveTypePwm() {
+		this.wave = WAVE_TYPE_PWM;
+	}
+
+	public void setWaveTypeSawtooth() {
+		this.wave = WAVE_TYPE_SAWTOOTH;
+	}
+
 	//copy maker
 	public Metronome copyMetronome() {
 		if(!play)
 			this.stop();
 		Metronome metronomeCopy;
-		metronomeCopy = new Metronome(this.getAudioGenerator());
+		metronomeCopy = new Metronome(this.getAudioGenerator(), this.getWaveType());
 		metronomeCopy.setSound(this.getSound());
 		metronomeCopy.setBeatSound(this.getBeatSound());
 		metronomeCopy.setBpm(this.getBpm());

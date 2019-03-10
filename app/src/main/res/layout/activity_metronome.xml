@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright (c) 2016.
+  ~ Copyright (c) 2019.
   ~ This file is part of Metronome.
   ~
   ~      Metronome is free software: you can redistribute it and/or modify
@@ -32,8 +32,8 @@
 		android:id="@+id/buttonStart"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_alignEnd="@+id/linearLayout3" android:layout_alignParentStart="true"
-		android:layout_below="@+id/linearLayout3"
+		android:layout_alignEnd="@id/linearLayout3" android:layout_alignParentStart="true"
+		android:layout_below="@id/linearLayout3"
 		android:backgroundTint="@color/colorPrimaryDarker"
 		android:text="@string/start"/>
 	<TextView
@@ -47,17 +47,17 @@
 		android:id="@+id/textViewBPM"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_alignBottom="@+id/textView"
-		android:layout_alignEnd="@+id/buttonStart" android:layout_alignParentTop="true"
-		android:layout_toEndOf="@+id/textView" android:gravity="center"
+		android:layout_alignBottom="@id/textView"
+		android:layout_alignEnd="@id/buttonStart" android:layout_alignParentTop="true"
+		android:layout_toEndOf="@id/textView" android:gravity="center"
 		android:text="Large Text"
 		android:textAppearance="?android:attr/textAppearanceLarge"/>
 	<LinearLayout
 		android:id="@+id/linearLayout"
 		style="?android:attr/buttonBarStyle"
 		android:layout_width="match_parent" android:layout_height="wrap_content"
-		android:layout_alignParentStart="true" android:layout_below="@+id/textView"
-		android:layout_toEndOf="@+id/textView"
+		android:layout_alignParentStart="true" android:layout_below="@id/textView"
+		android:layout_toEndOf="@id/textView"
 		android:orientation="horizontal">
 
 		<Button
@@ -110,15 +110,15 @@
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
 		android:layout_alignParentStart="true"
-		android:layout_below="@+id/linearLayout" android:text="@string/beats_number"
+		android:layout_below="@id/linearLayout" android:text="@string/beats_number"
 		android:textAppearance="?android:attr/textAppearanceLarge"/>
 	<TextView
 		android:id="@+id/textViewBeats"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_alignBottom="@+id/textView2"
-		android:layout_alignParentEnd="true" android:layout_below="@+id/linearLayout"
-		android:layout_toEndOf="@+id/textView2" android:gravity="center"
+		android:layout_alignBottom="@id/textView2"
+		android:layout_alignParentEnd="true" android:layout_below="@id/linearLayout"
+		android:layout_toEndOf="@id/textView2" android:gravity="center"
 		android:text="Large Text"
 		android:textAppearance="?android:attr/textAppearanceLarge"/>
 	<LinearLayout
@@ -126,7 +126,7 @@
 		style="?android:attr/buttonBarStyle"
 		android:layout_width="match_parent" android:layout_height="wrap_content"
 		android:layout_alignParentStart="true"
-		android:layout_below="@+id/textView2" android:orientation="horizontal">
+		android:layout_below="@id/textView2" android:orientation="horizontal">
 		<Button
 			android:id="@+id/buttonBeatPlusOne"
 			style="?android:attr/buttonBarButtonStyle"
@@ -146,7 +146,7 @@
 		android:id="@+id/toggleButton"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:layout_below="@+id/linearLayout2"
+		android:layout_below="@id/linearLayout2"
 		android:layout_centerHorizontal="true"
 		android:background="@drawable/screen_lock_toggle_button_colors"
 		android:checked="false"
@@ -160,7 +160,7 @@
 		android:id="@+id/linearLayout3"
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:layout_below="@+id/toggleButton"
+		android:layout_below="@id/radiogroup"
 		android:layout_marginTop="10dp"
 		android:orientation="horizontal" android:weightSum="2">
 		<Button
@@ -215,7 +215,50 @@
 			android:layout_weight="1"
 			android:text="@string/tone"/>
 	</LinearLayout>
-	<View style="@style/Divider" android:layout_above="@+id/linearLayout4"
+	<View style="@style/Divider" android:layout_above="@id/linearLayout4"
 		  android:layout_alignParentStart="true"/>
+	<LinearLayout
+		android:id="@+id/linearLayout5"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_below="@id/toggleButton"
+		android:layout_marginTop="10dp"
+		android:orientation="horizontal">
+		<TextView android:layout_width="match_parent"
+				  android:layout_height="wrap_content"
+				  android:gravity="center"
+				  android:text="@string/wave_type"
+				  android:textAppearance="?android:attr/textAppearanceLarge"
+		/>
+	</LinearLayout>
+	<RadioGroup android:id="@+id/radiogroup"
+				xmlns:android="http://schemas.android.com/apk/res/android"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_below="@id/linearLayout5"
+				android:gravity="center"
+				android:orientation="horizontal"
+				android:weightSum="3">
+		<RadioButton android:id="@+id/radio_sine"
+					 android:layout_width="wrap_content"
+					 android:layout_height="wrap_content"
+					 android:layout_weight="1"
+					 android:checked="true"
+					 android:onClick="onRadioButtonClicked"
+					 android:text="@string/sine"/>
+		<RadioButton android:id="@+id/radio_square"
+					 android:layout_width="wrap_content"
+					 android:layout_height="wrap_content"
+					 android:layout_weight="1"
+					 android:onClick="onRadioButtonClicked"
+					 android:text="@string/square"/>
+		<RadioButton android:id="@+id/radio_sawtooth"
+					 android:layout_width="wrap_content"
+					 android:layout_height="wrap_content"
+					 android:layout_weight="1"
+					 android:onClick="onRadioButtonClicked"
+					 android:text="@string/sawtooth"/>
+	</RadioGroup>
+
 
 </RelativeLayout>
