@@ -59,8 +59,8 @@ public class Metronome {
 			switch (wave) {
 				//default is sine, so it isn't listed here
 				case Metronome.WAVE_TYPE_PWM:
-					tick = audioGenerator.getPWMWave(this.tick, 8000, beatSound);
-					tock = audioGenerator.getPWMWave(this.tick, 8000, sound);
+					tick = audioGenerator.getThinPWMWave(this.tick, 8000, beatSound, 0.3);
+					tock = audioGenerator.getThinPWMWave(this.tick, 8000, sound, 0.3);
 					break;
 				case Metronome.WAVE_TYPE_SAWTOOTH:
 					tick = audioGenerator.getSawtoothWave(this.tick, 8000, beatSound);

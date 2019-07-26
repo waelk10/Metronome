@@ -58,6 +58,40 @@ public class AudioGenerator {
 		return sample;
 	}
 
+	public double[] getThinPWMWave(int samples, int sampleRate, double frequencyOfTone, double thinness) {
+		double[] sample = getPWMWave(samples, sampleRate, frequencyOfTone);
+		//if thinness is not a fraction of 1, return square (as this is an error - gracefully fail)
+		if (thinness <= 0 || thinness >= 1)
+			return sample;
+		//got a square wave, make a PWM one with change to the duty cycle
+		//get min and max values so you can modulate the cycle
+		double min = Double.MAX_VALUE;
+		double max = Double.MIN_VALUE;
+		boolean flag_a = true;
+		boolean flag_b = true;
+		for (int i = 0; i < sample.length && (flag_a || flag_b); i++) {
+			if (sample[i] > max) {
+				max = sample[i];
+				flag_a = false;
+			} else if (sample[i] < min) {
+				min = sample[i];
+				flag_b = false;
+			}
+		}
+		//assuming a uniform wave, modulate it
+		for (int i = 0; i < sample.length - 1; i++) {
+			if (sample[i] == max) {
+
+				while (sample[i + 1] != max) {
+					sample[i] = min;
+					i++;
+				}
+			}
+		}
+		//return the modified sample
+		return sample;
+	}
+
 
 
 	public byte[] get16BitPcm(double[] samples) {
