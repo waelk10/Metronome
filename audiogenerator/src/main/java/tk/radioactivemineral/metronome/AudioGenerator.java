@@ -25,6 +25,8 @@ import android.media.AudioTrack;
 import android.os.Build;
 
 public class AudioGenerator {
+	private final static double positiveRound = 1.0;
+	private final static double negativeRound = -1.0;
 	private int sampleRate;
 	private AudioTrack audioTrack;
 
@@ -52,7 +54,8 @@ public class AudioGenerator {
 		double[] sample = getSineWave(samples, sampleRate, frequencyOfTone);
 		//turn the sine wave into a PWM wave
 		for (int i = 0; i < sample.length; i++) {
-			sample[i] = Math.round(sample[i]);
+			//sample[i] = Math.round(sample[i]);
+			sample[i] = getSign(sample[i]);
 		}
 		//return the modified sample
 		return sample;
@@ -63,38 +66,58 @@ public class AudioGenerator {
 		//if thinness is not a fraction of 1, return square (as this is an error - gracefully fail)
 		if (thinness <= 0 || thinness >= 1)
 			return sample;
-		//got a square wave, make a PWM one with change to the duty cycle
-		//get min and max values so you can modulate the cycle
-		double min = Double.MAX_VALUE;
-		double max = Double.MIN_VALUE;
-		boolean flag_a = true;
-		boolean flag_b = true;
-		for (int i = 0; i < sample.length && (flag_a || flag_b); i++) {
-			if (sample[i] > max) {
-				max = sample[i];
-				flag_a = false;
-			} else if (sample[i] < min) {
-				min = sample[i];
-				flag_b = false;
-			}
-		}
-		//assuming a uniform wave, modulate it
-		for (int i = 0; i < sample.length - 1; i++) {
-			if (sample[i] == max) {
 
-				while (sample[i + 1] != max) {
-					sample[i] = min;
-					i++;
-				}
+		int length = 0;
+		boolean flag = true;
+		//count the width
+		while(length<sample.length && flag) {
+			if(length>0 && sample[length] != sample[length-1])
+				flag = false;
+			else
+				length++;
+		}
+
+		//calculate the effective lengths
+		int length_high = (int) (thinness * length);
+		int length_low = length - length_high;
+
+		//counter
+		int j;
+
+		//for debugging, zero out the array
+		/*for (int i = 0; i < sample.length; i++) {
+			sample[i] = 0;
+		}*/
+
+		//resynthesize the wave
+		for (int i = 0; i < sample.length - 1;) {
+			j = 0;
+			while(j < length_high && i < sample.length){
+				sample[i] = positiveRound;
+				i++;
+				j++;
+			}
+			j=0;
+			while(j < length_low && i < sample.length){
+				sample[i] = negativeRound;
+				i++;
+				j++;
 			}
 		}
 		//return the modified sample
+
 		return sample;
 	}
 
 
+	//helper function that returns 1 for positive and -1 for negative
+	private double getSign(double value){
+		if (value >= 0)
+			return positiveRound;
+		return negativeRound;
+	}
 
-	public byte[] get16BitPcm(double[] samples) {
+	private byte[] get16BitPcm(double[] samples) {
 		byte[] generatedSound = new byte[2 * samples.length];
 		int index = 0;
 		for (double sample : samples) {

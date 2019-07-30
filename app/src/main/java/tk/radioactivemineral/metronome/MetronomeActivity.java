@@ -67,7 +67,6 @@ import static tk.radioactivemineral.metronome.SaveDialogActivity.DATA_STORAGE_FI
 public class MetronomeActivity extends Activity {
 	public final static boolean AUTO_SAVE_FLAG_FALSE = false;
 	public final static int REQUEST_ID = 1;
-	//public final static int BUFFER_SIZE = 1024;
 	public final static String PREFS_NAME = "DbPrefsFile";
 	public final static String DB_SAVE_EXISTS = "DB_EXISTS";
 	public final static String DIALOG_SAVE_ID = "INTENT_ID_DATA";
@@ -86,11 +85,15 @@ public class MetronomeActivity extends Activity {
 	private final static int NORMAL_INTERVAL = 100;
 	private final static double SOUND = 880;
 	private final static double BEAT_SOUND = 440;
+	private final static double THINNESS = 0.2;
 	private final static boolean AUTO_SAVE_FLAG_TRUE = true;
 	private final static String TAG = "MetronomeActivity";
+
+	//TextViews
 	TextView textViewBPM;
 	TextView textViewBeats;
 
+	//misc operational buttons
 	Button startButton;
 	Button bpmPlusOneButton;
 	Button bpmPlusTenButton;
@@ -107,12 +110,16 @@ public class MetronomeActivity extends Activity {
 	Button roundDownButton;
 	Button toneButton;
 
+	//RadioButtons
 	RadioButton radioButtonSine;
 	RadioButton radioButtonSquare;
+	RadioButton radioButtonPWM;
 	RadioButton radioButtonSawtooth;
 
+	//only toggle button
 	ToggleButton toggleButton;
 
+	//various objects
 	Metronome metronome;
 	Metronome currentMetronome;
 
@@ -120,6 +127,7 @@ public class MetronomeActivity extends Activity {
 
 	Boolean flag;
 
+	//prefs
 	String patternString;
 	String uuid;
 	String wave;
@@ -129,14 +137,19 @@ public class MetronomeActivity extends Activity {
 	Long timeDeltaSum;
 	Long totalTime;
 
+	//helper context variable
 	Context contextActivity;
 
+	//data about the metronome timings
 	int bpm;
 	int beats;
 	int taps;
 
+	//sound pitch
 	double beatSound;
 	double sound;
+
+
 	//used for the tone menu button
 	private View.OnClickListener toneClickListener = new View.OnClickListener() {
 		@Override
@@ -325,6 +338,7 @@ public class MetronomeActivity extends Activity {
 		//RadioButton
 		radioButtonSine = findViewById(R.id.radio_sine);
 		radioButtonSquare = findViewById(R.id.radio_square);
+		radioButtonPWM = findViewById(R.id.radio_pwm);
 		radioButtonSawtooth = findViewById(R.id.radio_sawtooth);
 		//ToggleButton
 		toggleButton = findViewById(R.id.toggleButton);
@@ -391,7 +405,7 @@ public class MetronomeActivity extends Activity {
 		if (wave == null)
 			wave = Metronome.WAVE_TYPE_SINE;
 		//initialize the metronome object
-		metronome = new Metronome(wave);
+		metronome = new Metronome(wave, THINNESS);
 		metronome.setBeatSound(beatSound);
 		metronome.setSound(sound);
 		metronome.setBpm(bpm);
@@ -435,6 +449,7 @@ public class MetronomeActivity extends Activity {
 						metronome.setBpm(bpm);
 						metronome.setBeatSound(beatSound);
 						metronome.setSound(sound);
+						metronome.setThinness(THINNESS);
 						//reset the current metronome and re-copy
 						metronomeReset();
 						//execute the metronome with current settings asynchronously
@@ -594,6 +609,9 @@ public class MetronomeActivity extends Activity {
 			case R.id.radio_sine:
 				wave = Metronome.WAVE_TYPE_SINE;
 				break;
+			case  R.id.radio_pwm:
+				wave = Metronome.WAVE_TYPE_PWM_THIN;
+				break;
 			case R.id.radio_square:
 				wave = Metronome.WAVE_TYPE_PWM;
 				break;
@@ -604,6 +622,7 @@ public class MetronomeActivity extends Activity {
 
 		//update the metronome
 		metronome.setWaveType(wave);
+		metronome.setThinness(THINNESS);
 	}
 
 	//delete from db
@@ -718,7 +737,7 @@ public class MetronomeActivity extends Activity {
 							//initialize wavetype if null
 							if (wave == null)
 								wave = Metronome.WAVE_TYPE_SINE;
-							metronome = new Metronome(audioGenerator, wave);
+							metronome = new Metronome(audioGenerator, wave, THINNESS);
 							metronome.setBeatSound(beatSound);
 							metronome.setSound(sound);
 							metronome.setBpm(bpm);
@@ -730,12 +749,17 @@ public class MetronomeActivity extends Activity {
 								radioButtonSine.setChecked(false);
 							if (radioButtonSquare.isChecked())
 								radioButtonSquare.setChecked(false);
+							if (radioButtonPWM.isChecked())
+								radioButtonPWM.setChecked(false);
 							if (radioButtonSawtooth.isChecked())
 								radioButtonSawtooth.setChecked(false);
 							//set the right button
 							switch (wave) {
 								case Metronome.WAVE_TYPE_SINE:
 									radioButtonSine.setChecked(true);
+									break;
+								case Metronome.WAVE_TYPE_PWM_THIN:
+									radioButtonPWM.setChecked(true);
 									break;
 								case Metronome.WAVE_TYPE_PWM:
 									radioButtonSquare.setChecked(true);

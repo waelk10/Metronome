@@ -21,21 +21,32 @@ package tk.radioactivemineral.metronome;
 public class Metronome {
 	public final static String WAVE_TYPE_SINE = "SINE";
 	public final static String WAVE_TYPE_PWM = "PWM";
+	public final static String WAVE_TYPE_PWM_THIN = "PWM_THIN";
 	public final static String WAVE_TYPE_SAWTOOTH = "SAWTOOTH";
-	private final int tick = 1000; // samples of tick
+	private final int samples = 1000; // samples of tick
+	private final static int sampleRate = 8000;
 	private double bpm;
 	private int beat;
 	private int silence;
 	private double beatSound;
 	private double sound;
+	private double thinness;
 	private String wave;
 	private boolean play = true;
 	private AudioGenerator audioGenerator;
 
 	public Metronome(String waveType) {
-		audioGenerator = new AudioGenerator(8000);
+		audioGenerator = new AudioGenerator(sampleRate);
 		audioGenerator.createPlayer();
 		wave = waveType;
+	}
+
+	//used for thin PWM
+	public Metronome(String waveType, double thinness) {
+		audioGenerator = new AudioGenerator(sampleRate);
+		audioGenerator.createPlayer();
+		wave = waveType;
+		this.thinness = thinness;
 	}
 
 	public Metronome(AudioGenerator audioGenerator, String waveType) {
@@ -44,27 +55,42 @@ public class Metronome {
 		wave = waveType;
 	}
 
+	//used for thin PWM
+	public Metronome(AudioGenerator audioGenerator, String waveType, double thinness) {
+		this.audioGenerator = audioGenerator;
+		audioGenerator.createPlayer(audioGenerator.getAudioTrack());
+		//fallback to sine if called improperly
+		if (!waveType.contentEquals(Metronome.WAVE_TYPE_PWM_THIN)){
+			wave = waveType;
+			this.thinness = thinness;
+		}else{
+			wave = Metronome.WAVE_TYPE_SINE;
+		}
+	}
+
 	public void calcSilence() {
-		silence = (int) (((60 / bpm) * 8000) - tick);
+		silence = (int) (((60 / bpm) * sampleRate) - samples);
 	}
 
 	public void play() {
 		calcSilence();
-		double[] tick =
-				audioGenerator.getSineWave(this.tick, 8000, beatSound);
-		double[] tock =
-				audioGenerator.getSineWave(this.tick, 8000, sound);
-		//start according to wavetype
+		double[] tick = audioGenerator.getSineWave(samples, sampleRate, beatSound);
+		double[] tock = audioGenerator.getSineWave(samples, sampleRate, sound);
+		//start according to wave type
 		if (!wave.contentEquals(WAVE_TYPE_SINE))
 			switch (wave) {
-				//default is sine, so it isn't listed here
+				//select the proper waveform
+				case Metronome.WAVE_TYPE_PWM_THIN:
+					tick = audioGenerator.getThinPWMWave(samples, sampleRate, beatSound, thinness);
+					tock = audioGenerator.getThinPWMWave(samples, sampleRate , sound, thinness);
+					break;
 				case Metronome.WAVE_TYPE_PWM:
-					tick = audioGenerator.getThinPWMWave(this.tick, 8000, beatSound, 0.3);
-					tock = audioGenerator.getThinPWMWave(this.tick, 8000, sound, 0.3);
+					tick = audioGenerator.getPWMWave(samples, sampleRate, beatSound);
+					tock = audioGenerator.getPWMWave(samples, sampleRate, sound);
 					break;
 				case Metronome.WAVE_TYPE_SAWTOOTH:
-					tick = audioGenerator.getSawtoothWave(this.tick, 8000, beatSound);
-					tock = audioGenerator.getSawtoothWave(this.tick, 8000, sound);
+					tick = audioGenerator.getSawtoothWave(samples, sampleRate, beatSound);
+					tock = audioGenerator.getSawtoothWave(samples, sampleRate, sound);
 					break;
 			}
 		double silence = 0;
@@ -72,7 +98,7 @@ public class Metronome {
 		int t = 0, s = 0, b = 0;
 		do {
 			for (int i = 0; i < sound.length && play; i++) {
-				if (t < this.tick) {
+				if (t < this.samples) {
 					if (b == 0)
 						sound[i] = tock[t];
 					else
@@ -144,6 +170,9 @@ public class Metronome {
 			case Metronome.WAVE_TYPE_SINE:
 				this.setWaveTypeSine();
 				break;
+			case Metronome.WAVE_TYPE_PWM_THIN:
+				this.setWaveTypePwmThin();
+				break;
 			case Metronome.WAVE_TYPE_PWM:
 				this.setWaveTypePwm();
 				break;
@@ -161,6 +190,10 @@ public class Metronome {
 		this.wave = WAVE_TYPE_PWM;
 	}
 
+	public void setWaveTypePwmThin(){
+		this.wave = WAVE_TYPE_PWM_THIN;
+	}
+
 	public void setWaveTypeSawtooth() {
 		this.wave = WAVE_TYPE_SAWTOOTH;
 	}
@@ -175,11 +208,20 @@ public class Metronome {
 		metronomeCopy.setBeatSound(this.getBeatSound());
 		metronomeCopy.setBpm(this.getBpm());
 		metronomeCopy.setBeat(this.getBeat());
+		metronomeCopy.setThinness(this.getThinness());
 		return metronomeCopy;
 	}
 
 	public Boolean playRes() {
 		this.play();
 		return Boolean.TRUE;
+	}
+
+	public void setThinness(double thinness) {
+		this.thinness = thinness;
+	}
+
+	public double getThinness(){
+		return this.thinness;
 	}
 }

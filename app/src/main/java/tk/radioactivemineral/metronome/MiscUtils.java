@@ -31,7 +31,11 @@ import java.util.List;
 
 /**
  * misc utils for use throughout the app
- */
+ *
+ * Sidenote on the storage logic:
+ * The values are stored like this:
+ * 'name';'beats';'bpm';'autosave';'beat sound';'sound';'uuid';'wave'|
+ * */
 
 public class MiscUtils {
 	private final static char letter_start_capital = 'A';
@@ -39,7 +43,7 @@ public class MiscUtils {
 	private final static String FALSE = "FALSE";
 	private final static String READ_LOG_TAG = "MiscUtils_readSavedData";
 	public final static int WAVE_INDEX = 7;
-	private final static int AUTOSAVE_LENGTH = 9;
+	private final static int AUTOSAVE_LENGTH = 10;
 	public final static char newline = '|';
 	public final static char separator = ';';
 	public final static int BEATS_INDEX = 1;
@@ -47,7 +51,7 @@ public class MiscUtils {
 	public final static int BEAT_SOUND_INDEX = 4;
 	public final static int SOUND_INDEX = 5;
 	public final static int UUID_INDEX = 6;
-	private final static int FIELDS = 8;
+	private final static int FIELDS = 9;
 
 	public static String prepareForStorage(String name, int beats, int bpm, boolean autosave, double beatSound, double sound, String uuid, String wave) {
 		if (autosave)

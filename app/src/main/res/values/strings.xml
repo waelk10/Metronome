@@ -73,5 +73,6 @@
 	<string name="square">Square</string>
 	<string name="sine">Sine</string>
 	<string name="sawtooth">Sawtooth</string>
+	<string name="PWM">PWM</string>
 	<string name="cancel">Cancel</string>
 </resources>
