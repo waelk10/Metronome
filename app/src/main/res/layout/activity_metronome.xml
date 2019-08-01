@@ -196,8 +196,7 @@
 			android:layout_height="wrap_content"
 			android:layout_weight="1"
 			android:backgroundTint="@color/colorPrimaryDarker"
-			android:text="@string/tap"
-			android:textColor="@color/colorPrimaryLight" />
+			android:text="@string/tap" />
 
 		<Button
 			android:id="@+id/buttonStopTap"
@@ -205,8 +204,7 @@
 			android:layout_height="wrap_content"
 			android:layout_weight="1"
 			android:backgroundTint="@color/colorPrimaryDarker"
-			android:text="@string/stop_tap"
-			android:textColor="@color/colorPrimaryLight" />
+			android:text="@string/stop_tap" />
 	</LinearLayout>
 
 	<LinearLayout

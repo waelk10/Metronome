@@ -29,6 +29,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.text.style.UnderlineSpan;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -36,9 +37,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
-import android.widget.LinearLayout;
 import android.widget.RadioButton;
-import android.widget.ScrollView;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -109,6 +109,9 @@ public class MetronomeActivity extends Activity {
 	Button roundUpButton;
 	Button roundDownButton;
 	Button toneButton;
+
+	//RadioGroup
+	RadioGroup radioGroup;
 
 	//RadioButtons
 	RadioButton radioButtonSine;
@@ -335,6 +338,8 @@ public class MetronomeActivity extends Activity {
 		roundUpButton = findViewById(R.id.buttonRoundUp);
 		roundDownButton = findViewById(R.id.buttonRoundDown);
 		toneButton = findViewById(R.id.button_tone);
+		//RadioGroup
+		radioGroup = findViewById(R.id.radiogroup);
 		//RadioButton
 		radioButtonSine = findViewById(R.id.radio_sine);
 		radioButtonSquare = findViewById(R.id.radio_square);
@@ -382,15 +387,17 @@ public class MetronomeActivity extends Activity {
 		boolean save = preferences.getBoolean(DB_SAVE_EXISTS, false);
 		if (save) {
 			String fileData = MiscUtils.readSavedData(MetronomeActivity.this);
-			double[] valuesArray = getAutoSaveValues(fileData);
-			if (valuesArray != null) {
+			SaveValues saveValues = getAutoSaveValues(fileData);
+			if (saveValues != null) {
+				double[] valuesArray = saveValues.getValues();
 				beats = (int) valuesArray[BEATS_INDEX];
 				bpm = (int) valuesArray[BPM_INDEX];
 				beatSound = valuesArray[BEAT_SOUND_INDEX];
 				sound = valuesArray[SOUND_INDEX];
 				uuid = getUuid(fileData);
-				String[] strings = MiscUtils.parseSaveData(fileData);
-				wave = strings[MiscUtils.WAVE_INDEX];
+				//String[] strings = MiscUtils.parseSaveData(fileData);
+				//wave = strings[MiscUtils.WAVE_INDEX];
+				wave = saveValues.getWave();
 			}
 		}
 
@@ -667,6 +674,9 @@ public class MetronomeActivity extends Activity {
 		//list the options
 		final String[] notes = pitchGenerator.getNotes();
 		AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity, R.style.DialogSaveTheme);
+		//change size
+		int width = (int)(contextActivity.getResources().getDisplayMetrics().widthPixels*0.9);
+		int height = (int)(contextActivity.getResources().getDisplayMetrics().heightPixels*0.9);
 		builder.setSingleChoiceItems(notes, 0, null).setPositiveButton(R.string.tock, new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
@@ -700,7 +710,10 @@ public class MetronomeActivity extends Activity {
 				sound = SOUND;
 				beatSound = BEAT_SOUND;
 			}
-		}).show();
+		});
+		AlertDialog dialog = builder.create();
+		dialog.show();
+		dialog.getWindow().setLayout(width, height);
 	}
 
 	//restore dialog
@@ -714,6 +727,9 @@ public class MetronomeActivity extends Activity {
 			final String[][] parsedData = MiscUtils.parseSaveDataList(data);
 			final String[][] fullParsedData = MiscUtils.parseSaveDataArrays(data);
 			if (parsedData != null) {
+				//change size
+				int width = (int)(contextActivity.getResources().getDisplayMetrics().widthPixels*0.9);
+				int height = (int)(contextActivity.getResources().getDisplayMetrics().heightPixels*0.9);
 				AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity, R.style.DialogSaveTheme);
 				final String[] titles = getTitles(parsedData);
 				builder.setSingleChoiceItems(titles, 0, null).setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
@@ -745,14 +761,7 @@ public class MetronomeActivity extends Activity {
 							currentMetronome = metronome.copyMetronome();
 
 							//reset the wave UI
-							if (radioButtonSine.isChecked())
-								radioButtonSine.setChecked(false);
-							if (radioButtonSquare.isChecked())
-								radioButtonSquare.setChecked(false);
-							if (radioButtonPWM.isChecked())
-								radioButtonPWM.setChecked(false);
-							if (radioButtonSawtooth.isChecked())
-								radioButtonSawtooth.setChecked(false);
+							radioGroup.clearCheck();
 							//set the right button
 							switch (wave) {
 								case Metronome.WAVE_TYPE_SINE:
@@ -788,18 +797,22 @@ public class MetronomeActivity extends Activity {
 							delete(parsedData[selectedPosition][1]);
 						}
 					}
-				}).show();
+				});
+				AlertDialog dialog = builder.create();
+				dialog.show();
+				//dialog.getWindow().setLayout(width, height);
 			} else {
 				Toast.makeText(contextActivity, getResources().getText(R.string.no_saved_presets_toast), Toast.LENGTH_SHORT).show();
-				double[] valuesArray = getAutoSaveValues(data);
-				if (valuesArray != null) {
+				SaveValues saveValues = getAutoSaveValues(data);
+				if (saveValues != null) {
+					double[] valuesArray = saveValues.getValues();
 					beats = (int) valuesArray[BEATS_INDEX];
 					bpm = (int) valuesArray[BPM_INDEX];
 					beatSound = valuesArray[BEAT_SOUND_INDEX];
 					sound = valuesArray[SOUND_INDEX];
 					uuid = valuesArray[UUID_INDEX] + "";
-					String[] strings = MiscUtils.parseSaveData(data);
-					wave = strings[MiscUtils.WAVE_INDEX];
+					//String[] strings = MiscUtils.parseSaveData(data);
+					wave = saveValues.getWave();
 				}
 			}
 		}else {
@@ -840,31 +853,34 @@ public class MetronomeActivity extends Activity {
 		}
 		//build the dialog
 		AlertDialog.Builder builder = new AlertDialog.Builder(contextActivity, R.style.DialogSaveTheme);
+		LayoutInflater layoutInflater = this.getLayoutInflater();
+		View dialogView = layoutInflater.inflate(R.layout.linear_layout_about_container,null);
+		builder.setView(dialogView);
+		TextView textView = (TextView) dialogView.findViewById(R.id.textViewAbout);
 		//build the text
-		Spanny message = new Spanny(getString(R.string.app_name) + '\n', new UnderlineSpan()).append('\n' + getString(R.string.email)).append('\n' + getString(R.string.copyright)).append('\n' + version + '\n').append('\n' + getString(R.string.about_note)).append("\n\n\n\n\n" + getString(R.string.license));
-		builder.setMessage(message).setTitle(getString(R.string.about));
+		Spanny message = new Spanny(getString(R.string.app_name) + '\n', new UnderlineSpan()).append('\n' + getString(R.string.email)).append('\n' + getString(R.string.copyright)).append('\n' + version + '\n').append('\n' + getString(R.string.about_note)).append("\n\n" + getString(R.string.license)).append("\n\n" + this.getResources().getText(R.string.radioactive));
+		builder.setTitle(getString(R.string.about));
 		//add the icon
 		builder.setIcon(getResources().getDrawable(R.mipmap.ic_launcher, getTheme()));
+		//set text
+		textView.setText(message.toString());
 		//create the object
 		AlertDialog dialog = builder.create();
-		//build the layout
-		final LinearLayout layout = new LinearLayout(this);
-		ScrollView scrollView = new ScrollView(this);
-		layout.setOrientation(LinearLayout.VERTICAL);
-		TextView textView = new TextView(this);
-		textView.setText(message);
-		scrollView.addView(textView);
-		dialog.setView(layout);
 		//display the dialog to the user
 		dialog.show();
+
+		//change size
+		int width = (int)(contextActivity.getResources().getDisplayMetrics().widthPixels*0.9);
+		int height = (int)(contextActivity.getResources().getDisplayMetrics().heightPixels*0.9);
+		dialog.getWindow().setLayout(width, height);
 	}
 
 	//used to find and return the values of the auto-save preset
-	private double[] getAutoSaveValues(String data) {
+	private SaveValues getAutoSaveValues(String data){
 		if (data == null)
 			return null;
 		double[] values = new double[AUTO_SAVE_VALUES_ARRAY_LENGTH];
-		String dataString = null;
+		String dataString;
 		dataString = MiscUtils.getAutoSave(data, MetronomeActivity.this);
 		if (dataString == null)
 			return null;
@@ -873,7 +889,7 @@ public class MetronomeActivity extends Activity {
 		values[BPM_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.BPM_INDEX]);
 		values[BEAT_SOUND_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.BEAT_SOUND_INDEX]);
 		values[SOUND_INDEX] = Double.parseDouble(parsedDataStrings[MiscUtils.SOUND_INDEX]);
-		return values;
+		return new SaveValues(parsedDataStrings[MiscUtils.WAVE_INDEX], values);
 	}
 
 	//used to get the uuid String!!

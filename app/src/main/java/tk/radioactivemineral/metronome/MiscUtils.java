@@ -143,9 +143,12 @@ public class MiscUtils {
 		for (i = 0; i < data.length(); i++) {
 			if (data.charAt(i) == letter_start_capital)
 				if (i + AUTOSAVE_LENGTH < data.length()) {
-					String subString = data.substring(i, i + AUTOSAVE_LENGTH - 1);
-					if (subString.contentEquals(context.getResources().getText(R.string.autosave_name).toString()))
+					String subString = data.substring(i, i + AUTOSAVE_LENGTH - 2);
+					if (subString.contentEquals(context.getResources().getText(R.string.autosave_name).toString())) {
 						data = data.replace(data.substring(i, newlineIndex(data, i) + 1), "");
+						//since we removed an entry, don't advance i
+						i--;
+					}
 				}
 		}
 		//cleanup the dual-separator glitch
@@ -166,7 +169,13 @@ public class MiscUtils {
 		boolean found = false;
 		int i = 0;
 		while (i < data.length() && !found) {
-			if (data.charAt(i) == letter_start_capital && i + AUTOSAVE_LENGTH < data.length() && data.substring(i, i + AUTOSAVE_LENGTH).equals(context.getResources().getText(R.string.autosave_name).toString())) {
+			boolean flag = (data.charAt(i) == letter_start_capital);
+			flag = flag && (i + AUTOSAVE_LENGTH < data.length());
+			String substring = data.substring(i, i + AUTOSAVE_LENGTH - 2);
+			String ref = context.getResources().getText(R.string.autosave_name).toString();
+			flag = flag && (substring.contentEquals(ref));
+			//if (data.charAt(i) == letter_start_capital && i + AUTOSAVE_LENGTH < data.length() && data.substring(i, i + AUTOSAVE_LENGTH).equals(context.getResources().getText(R.string.autosave_name).toString())) {
+			if (flag){
 				result = data.substring(i, newlineIndex(data, i));
 				found = true;
 			}

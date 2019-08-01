@@ -17,23 +17,25 @@
   ~      along with Metronome.  If not, see <http://www.gnu.org/licenses/>.
   -->
 
-<resources>
-	<!--<color name="colorPrimary">#607D8B</color>
-	<color name="colorPrimaryDark">#455A64</color>
-	<color name="colorPrimaryLight">#CFD8DC</color>
-	<color name="colorAccent">#009688</color>
-	<color name="colorPrimaryText">#03a9f4</color>
-	<color name="colorSecondaryText">#727272</color>
-	<color name="icons">#FFFFFF</color>
-	<color name="divider">#B6B6B6</color>-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/linearLayoutAbout" android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:orientation="vertical">
+	<ScrollView
+		android:layout_width="match_parent"
+		android:layout_height="match_parent">
 
-	<color name="colorPrimary">#1565c0</color>
-	<color name="colorPrimaryDark">#003c8f</color>
-	<color name="colorPrimaryLight">#5e92f3</color>
-	<color name="colorAccent">#7DF8FA</color>
-	<color name="colorPrimaryText">#EAFAFC</color>
-	<color name="colorSecondaryText">#727272</color>
-	<color name="icons">#FFFFFF</color>
-	<color name="divider">#B6B6B6</color>
-	<color name="colorPrimaryDarker">#1F92EB</color>
-</resources>
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical" >
+			<TextView
+				android:id="@+id/textViewAbout"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_margin="10dp"
+				android:autoLink="web"
+				android:text="@string/radioactive"/>
+		</LinearLayout>
+	</ScrollView>
+</LinearLayout>
