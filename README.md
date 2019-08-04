@@ -11,3 +11,9 @@ The project is licensed under the [GNU General Public License version 3 (or newe
 ## IMPORTANT NOTICE(S):
 1- I WILL NOT BE IMPLEMENTING ANY CoC(k)s.  
 2- THIS REPO WILL BE MOVED TO ANOTHER SERVICE SOON - SOMETHING MORE LIBRE, BECAUSE M$ SUCKS AND HATES FREEDOM.
+
+
+https://notabug.org/wael/Metronome is the new repo where this app lives now, this code hosted on github will no longer be maintained
+
+DEPRICATED REPO!!
+DEPRICATED REPO!!
